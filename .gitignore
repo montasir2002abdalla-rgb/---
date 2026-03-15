@@ -1,0 +1,24 @@
+# التبعيات
+node_modules/
+
+# ملفات البيئة
+.env
+
+# ملفات نظام التشغيل
+.DS_Store
+Thumbs.db
+
+# ملفات السجلات
+*.log
+npm-debug.log*
+
+# مجلدات البناء والتوزيع
+dist/
+build/
+coverage/
+
+# ملفات إعدادات المحرر
+.idea/
+.vscode/
+*.swo
+*.swp
