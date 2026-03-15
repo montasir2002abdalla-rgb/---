@@ -27,9 +27,10 @@ pool.connect((err) => {
   }
 });
 
-// إنشاء الجداول
+// إنشاء الجداول (محدث)
 async function initDatabase() {
   try {
+    // جدول المستخدمين
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
@@ -37,16 +38,23 @@ async function initDatabase() {
         password_hash VARCHAR(255) NOT NULL
       );
     `);
+
+    // جدول الأصناف (محدث لدعم الكرتونة والقطعة)
     await pool.query(`
       CREATE TABLE IF NOT EXISTS items (
         id SERIAL PRIMARY KEY,
         name VARCHAR(200) NOT NULL,
-        quantity INTEGER DEFAULT 0,
-        price DECIMAL(10,2) DEFAULT 0,
-        cost DECIMAL(10,2) DEFAULT 0,
+        quantity INTEGER DEFAULT 0, -- المخزون دائماً بعدد القطع
+        pieces_per_carton INTEGER DEFAULT 1, -- عدد القطع في الكرتونة
+        price_piece DECIMAL(10,2) DEFAULT 0,
+        price_carton DECIMAL(10,2) DEFAULT 0,
+        cost_piece DECIMAL(10,2) DEFAULT 0,
+        cost_carton DECIMAL(10,2) DEFAULT 0,
         min_stock INTEGER DEFAULT 0
       );
     `);
+
+    // جدول المبيعات
     await pool.query(`
       CREATE TABLE IF NOT EXISTS sales (
         id SERIAL PRIMARY KEY,
@@ -55,16 +63,21 @@ async function initDatabase() {
         payment_method VARCHAR(50)
       );
     `);
+
+    // جدول عناصر المبيعات (محدث)
     await pool.query(`
       CREATE TABLE IF NOT EXISTS sale_items (
         id SERIAL PRIMARY KEY,
         sale_id INTEGER REFERENCES sales(id) ON DELETE CASCADE,
         item_id INTEGER REFERENCES items(id) ON DELETE CASCADE,
-        quantity INTEGER,
-        price DECIMAL(10,2),
-        total DECIMAL(10,2)
+        quantity INTEGER, -- الكمية المباعة بعدد القطع
+        price DECIMAL(10,2), -- السعر لكل قطعة (سعر الوحدة المستخدمة)
+        total DECIMAL(10,2),
+        profit DECIMAL(10,2) DEFAULT 0 -- ربح هذا البند
       );
     `);
+
+    // جدول المشتريات
     await pool.query(`
       CREATE TABLE IF NOT EXISTS purchases (
         id SERIAL PRIMARY KEY,
@@ -72,16 +85,20 @@ async function initDatabase() {
         total DECIMAL(10,2) DEFAULT 0
       );
     `);
+
+    // جدول عناصر المشتريات (محدث)
     await pool.query(`
       CREATE TABLE IF NOT EXISTS purchase_items (
         id SERIAL PRIMARY KEY,
         purchase_id INTEGER REFERENCES purchases(id) ON DELETE CASCADE,
         item_id INTEGER REFERENCES items(id) ON DELETE CASCADE,
-        quantity INTEGER,
-        price DECIMAL(10,2),
+        quantity INTEGER, -- الكمية المشتراة بعدد القطع
+        price DECIMAL(10,2), -- سعر القطعة (سعر الوحدة المستخدمة)
         total DECIMAL(10,2)
       );
     `);
+
+    // جدول الإرساليات
     await pool.query(`
       CREATE TABLE IF NOT EXISTS shipments (
         id SERIAL PRIMARY KEY,
@@ -96,7 +113,7 @@ async function initDatabase() {
       );
     `);
 
-    // مستخدم افتراضي
+    // إنشاء مستخدم افتراضي إذا لم يكن موجوداً
     const userCheck = await pool.query('SELECT * FROM users WHERE username = $1', ['عاصم عبدالله ود كمون']);
     if (userCheck.rows.length === 0) {
       const hashedPassword = await bcrypt.hash('admin123', 10);
@@ -158,11 +175,13 @@ app.get('/api/items', async (req, res) => {
 });
 
 app.post('/api/items', async (req, res) => {
-  const { name, quantity, price, cost, minStock } = req.body;
+  const { name, quantity, pieces_per_carton, price_piece, price_carton, cost_piece, cost_carton, min_stock } = req.body;
   try {
     const result = await pool.query(
-      'INSERT INTO items (name, quantity, price, cost, min_stock) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-      [name, quantity, price, cost, minStock || 0]
+      `INSERT INTO items 
+       (name, quantity, pieces_per_carton, price_piece, price_carton, cost_piece, cost_carton, min_stock) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+      [name, quantity || 0, pieces_per_carton || 1, price_piece || 0, price_carton || 0, cost_piece || 0, cost_carton || 0, min_stock || 0]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -172,11 +191,15 @@ app.post('/api/items', async (req, res) => {
 
 app.put('/api/items/:id', async (req, res) => {
   const { id } = req.params;
-  const { name, quantity, price, cost, minStock } = req.body;
+  const { name, quantity, pieces_per_carton, price_piece, price_carton, cost_piece, cost_carton, min_stock } = req.body;
   try {
     await pool.query(
-      'UPDATE items SET name = $1, quantity = $2, price = $3, cost = $4, min_stock = $5 WHERE id = $6',
-      [name, quantity, price, cost, minStock || 0, id]
+      `UPDATE items SET 
+        name = $1, quantity = $2, pieces_per_carton = $3, 
+        price_piece = $4, price_carton = $5, 
+        cost_piece = $6, cost_carton = $7, min_stock = $8 
+       WHERE id = $9`,
+      [name, quantity, pieces_per_carton, price_piece, price_carton, cost_piece, cost_carton, min_stock, id]
     );
     res.json({ message: 'تم التحديث' });
   } catch (err) {
@@ -199,10 +222,7 @@ app.get('/api/sales/all', async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT s.*, 
-        (SELECT SUM((si.price - i.cost) * si.quantity) 
-         FROM sale_items si 
-         JOIN items i ON si.item_id = i.id 
-         WHERE si.sale_id = s.id) as profit
+        (SELECT COALESCE(SUM(si.profit), 0) FROM sale_items si WHERE si.sale_id = s.id) as profit
       FROM sales s
       ORDER BY s.date DESC
     `);
@@ -217,6 +237,8 @@ app.post('/api/sales', async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+
+    // إدخال المبيعة
     const saleResult = await client.query(
       'INSERT INTO sales (total, payment_method) VALUES ($1, $2) RETURNING id',
       [total, paymentMethod]
@@ -224,12 +246,15 @@ app.post('/api/sales', async (req, res) => {
     const saleId = saleResult.rows[0].id;
 
     for (const item of saleItems) {
+      // item هنا يحتوي على id, qty (بالقطع), price (سعر القطعة), total, profit
       await client.query(
-        'INSERT INTO sale_items (sale_id, item_id, quantity, price, total) VALUES ($1, $2, $3, $4, $5)',
-        [saleId, item.id, item.qty, item.price, item.total]
+        'INSERT INTO sale_items (sale_id, item_id, quantity, price, total, profit) VALUES ($1, $2, $3, $4, $5, $6)',
+        [saleId, item.id, item.qty, item.price, item.total, item.profit || 0]
       );
+      // تحديث المخزون (خصم الكمية)
       await client.query('UPDATE items SET quantity = quantity - $1 WHERE id = $2', [item.qty, item.id]);
     }
+
     await client.query('COMMIT');
     res.status(201).json({ message: 'تم تسجيل البيع' });
   } catch (err) {
@@ -252,18 +277,23 @@ app.put('/api/sales/:id', async (req, res) => {
   }
 });
 
-// حذف المبيعة مع استرجاع الكميات
+// حذف المبيعة (مع إعادة الكمية للمخزون)
 app.delete('/api/sales/:id', async (req, res) => {
   const { id } = req.params;
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    // استرجاع عناصر البيع لإعادة الكمية للمخزون
-    const items = await client.query('SELECT * FROM sale_items WHERE sale_id = $1', [id]);
-    for (const item of items.rows) {
-      await client.query('UPDATE items SET quantity = quantity + $1 WHERE id = $2', [item.quantity, item.item_id]);
+
+    // استرجاع عناصر المبيعة
+    const itemsRes = await client.query('SELECT item_id, quantity FROM sale_items WHERE sale_id = $1', [id]);
+    for (const row of itemsRes.rows) {
+      // إعادة الكمية للمخزون
+      await client.query('UPDATE items SET quantity = quantity + $1 WHERE id = $2', [row.quantity, row.item_id]);
     }
+
+    // حذف المبيعة (سيتم حذف العناصر تلقائياً بسبب ON DELETE CASCADE)
     await client.query('DELETE FROM sales WHERE id = $1', [id]);
+
     await client.query('COMMIT');
     res.json({ message: 'تم الحذف' });
   } catch (err) {
@@ -289,6 +319,7 @@ app.post('/api/purchases', async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+
     const purchaseResult = await client.query(
       'INSERT INTO purchases (total) VALUES ($1) RETURNING id',
       [total]
@@ -296,15 +327,15 @@ app.post('/api/purchases', async (req, res) => {
     const purchaseId = purchaseResult.rows[0].id;
 
     for (const item of purchaseItems) {
+      // item يحتوي على id, qty (بالقطع), price (سعر القطعة), total
       await client.query(
         'INSERT INTO purchase_items (purchase_id, item_id, quantity, price, total) VALUES ($1, $2, $3, $4, $5)',
         [purchaseId, item.id, item.qty, item.price, item.total]
       );
-      await client.query(
-        'UPDATE items SET quantity = quantity + $1 WHERE id = $2',
-        [item.qty, item.id]
-      );
+      // تحديث المخزون (إضافة الكمية) - ملاحظة: لا نقوم بتحديث سعر التكلفة هنا، لكن يمكن إضافة ذلك إذا أردت
+      await client.query('UPDATE items SET quantity = quantity + $1 WHERE id = $2', [item.qty, item.id]);
     }
+
     await client.query('COMMIT');
     res.status(201).json({ message: 'تم تسجيل الشراء' });
   } catch (err) {
@@ -315,17 +346,21 @@ app.post('/api/purchases', async (req, res) => {
   }
 });
 
-// حذف المشتريات مع استرجاع الكميات (طرح الكميات)
+// حذف المشتريات (مع إعادة الكمية للمخزون)
 app.delete('/api/purchases/:id', async (req, res) => {
   const { id } = req.params;
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    const items = await client.query('SELECT * FROM purchase_items WHERE purchase_id = $1', [id]);
-    for (const item of items.rows) {
-      await client.query('UPDATE items SET quantity = quantity - $1 WHERE id = $2', [item.quantity, item.item_id]);
+
+    const itemsRes = await client.query('SELECT item_id, quantity FROM purchase_items WHERE purchase_id = $1', [id]);
+    for (const row of itemsRes.rows) {
+      // خصم الكمية من المخزون (لأننا نحذف عملية شراء)
+      await client.query('UPDATE items SET quantity = quantity - $1 WHERE id = $2', [row.quantity, row.item_id]);
     }
+
     await client.query('DELETE FROM purchases WHERE id = $1', [id]);
+
     await client.query('COMMIT');
     res.json({ message: 'تم الحذف' });
   } catch (err) {
@@ -391,11 +426,7 @@ app.get('/api/financial-summary', async (req, res) => {
     // إجمالي المشتريات
     const purchasesTotal = await pool.query('SELECT COALESCE(SUM(total),0) as total FROM purchases');
     // إجمالي الأرباح (مجموع أرباح المبيعات)
-    const profitResult = await pool.query(`
-      SELECT COALESCE(SUM((sale_items.price - i.cost) * sale_items.quantity),0) as profit
-      FROM sale_items
-      JOIN items i ON sale_items.item_id = i.id
-    `);
+    const profitResult = await pool.query('SELECT COALESCE(SUM(profit),0) as profit FROM sale_items');
     // مبيعات اليوم
     const today = new Date().toISOString().split('T')[0];
     const todaySales = await pool.query('SELECT COALESCE(SUM(total),0) as total FROM sales WHERE date::date = $1', [today]);
@@ -404,17 +435,15 @@ app.get('/api/financial-summary', async (req, res) => {
     const monthSales = await pool.query('SELECT COALESCE(SUM(total),0) as total FROM sales WHERE date >= $1', [firstDay]);
     // أرباح اليوم والشهر
     const todayProfit = await pool.query(`
-      SELECT COALESCE(SUM((sale_items.price - i.cost) * sale_items.quantity),0) as profit
-      FROM sale_items
-      JOIN items i ON sale_items.item_id = i.id
-      JOIN sales s ON sale_items.sale_id = s.id
+      SELECT COALESCE(SUM(profit),0) as profit 
+      FROM sale_items si
+      JOIN sales s ON si.sale_id = s.id
       WHERE s.date::date = $1
     `, [today]);
     const monthProfit = await pool.query(`
-      SELECT COALESCE(SUM((sale_items.price - i.cost) * sale_items.quantity),0) as profit
-      FROM sale_items
-      JOIN items i ON sale_items.item_id = i.id
-      JOIN sales s ON sale_items.sale_id = s.id
+      SELECT COALESCE(SUM(profit),0) as profit 
+      FROM sale_items si
+      JOIN sales s ON si.sale_id = s.id
       WHERE s.date >= $1
     `, [firstDay]);
 

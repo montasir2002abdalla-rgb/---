@@ -131,7 +131,7 @@ function hideNotification() {
 }
 
 function checkLowStockNotification() {
-    const lowStock = items.filter(i => i.quantity <= i.minStock);
+    const lowStock = items.filter(i => i.quantity <= i.min_stock);
     if (lowStock.length > 0) {
         document.getElementById('notificationMessage').innerText = `تنبيه: يوجد ${lowStock.length} صنف منخفض المخزون`;
         document.getElementById('notificationBar').style.display = 'flex';
@@ -166,6 +166,7 @@ function showSection(section, save = true) {
 
     closeSidebarOnMobile();
 
+    // تفعيل القسم المناسب
     if (section === 'dashboard') {
         document.querySelector('.sidebar-menu li:nth-child(1)').classList.add('active');
         document.getElementById('dashboardSection').classList.add('active');
@@ -324,7 +325,7 @@ document.getElementById('itemForm').addEventListener('submit', async (e) => {
     const id = document.getElementById('itemId').value;
     const item = {
         name: document.getElementById('itemName').value,
-        quantity: parseInt(document.getElementById('itemQuantity').value),
+        quantity: parseInt(document.getElementById('itemQuantity').value) || 0,
         pieces_per_carton: parseInt(document.getElementById('itemPiecesPerCarton').value) || 1,
         price_piece: parseFloat(document.getElementById('itemPricePiece').value) || 0,
         price_carton: parseFloat(document.getElementById('itemPriceCarton').value) || 0,
@@ -355,7 +356,7 @@ document.getElementById('itemForm').addEventListener('submit', async (e) => {
         await loadReports();
         await loadLowStock();
     } catch (error) {
-        alert('حدث خطأ');
+        alert('حدث خطأ: ' + error.message);
     }
 });
 
@@ -435,8 +436,8 @@ function removeSellItem(index) {
     const div = document.querySelectorAll('.sell-item')[index];
     if (div) div.remove();
     sellItems.splice(index, 1);
-    const itemsDivs = document.querySelectorAll('.sell-item');
-    itemsDivs.forEach((div, i) => {
+    // إعادة ترقيم العناصر
+    document.querySelectorAll('.sell-item').forEach((div, i) => {
         div.querySelector('select').id = `sell-item-${i}`;
         div.querySelector('select').setAttribute('onchange', `updateSellItem(${i})`);
         div.querySelector('select:nth-of-type(2)').id = `sell-unit-${i}`;
@@ -463,17 +464,24 @@ async function submitSell() {
         const dbItem = items.find(i => i.id === item.id);
         if (!dbItem) continue;
 
+        // تحويل الكمية إلى عدد القطع
         const qtyInPieces = item.unit === 'carton' ? item.qty * item.piecesPerCarton : item.qty;
-        const cost = item.unit === 'carton' ? (dbItem.cost_carton || 0) : (dbItem.cost_piece || 0);
+        
+        // سعر التكلفة المناسب (قطعة أو كرتونة)
+        const costPerUnit = item.unit === 'carton' ? (dbItem.cost_carton || 0) : (dbItem.cost_piece || 0);
+        // التكلفة الإجمالية لهذا البند
+        const totalCost = item.unit === 'carton' ? (costPerUnit * item.qty) : (costPerUnit * qtyInPieces);
+        
         const itemTotal = item.total;
-        const itemProfit = itemTotal - (cost * (item.unit === 'carton' ? item.qty : qtyInPieces));
+        const itemProfit = itemTotal - totalCost;
 
         totalAmount += itemTotal;
         totalProfit += itemProfit;
+        
         saleItems.push({
             id: item.id,
             qty: qtyInPieces,
-            price: item.price,
+            price: item.price, // سعر الوحدة المباعة (قطعة أو كرتونة)
             total: itemTotal,
             profit: itemProfit
         });
@@ -502,10 +510,10 @@ async function submitSell() {
             await loadLowStock();
             await loadSalesList();
         } else {
-            alert(data.error);
+            alert(data.error || 'حدث خطأ');
         }
     } catch (error) {
-        alert('فشل الاتصال');
+        alert('فشل الاتصال: ' + error.message);
     }
 }
 
@@ -571,8 +579,7 @@ function removeBuyItem(index) {
     const div = document.querySelectorAll('.buy-item')[index];
     if (div) div.remove();
     buyItems.splice(index, 1);
-    const itemsDivs = document.querySelectorAll('.buy-item');
-    itemsDivs.forEach((div, i) => {
+    document.querySelectorAll('.buy-item').forEach((div, i) => {
         div.querySelector('select').id = `buy-item-${i}`;
         div.querySelector('select').setAttribute('onchange', `updateBuyItem(${i})`);
         div.querySelector('select:nth-of-type(2)').id = `buy-unit-${i}`;
@@ -600,7 +607,7 @@ async function submitBuy() {
         purchaseItems.push({
             id: item.id,
             qty: qtyInPieces,
-            price: item.price,
+            price: item.price, // سعر الوحدة المشتراة (قطعة أو كرتونة)
             total: item.total
         });
     }
@@ -624,10 +631,10 @@ async function submitBuy() {
             await loadLowStock();
             await loadPurchasesList();
         } else {
-            alert(data.error);
+            alert(data.error || 'حدث خطأ');
         }
     } catch (error) {
-        alert('فشل الاتصال');
+        alert('فشل الاتصال: ' + error.message);
     }
 }
 
@@ -675,7 +682,7 @@ async function editSale(id) {
             alert('فشل التحديث');
         }
     } catch (error) {
-        alert('خطأ في الاتصال');
+        alert('خطأ في الاتصال: ' + error.message);
     }
 }
 
@@ -695,7 +702,7 @@ async function deleteSale(id) {
             alert('فشل الحذف');
         }
     } catch (error) {
-        alert('خطأ في الاتصال');
+        alert('خطأ في الاتصال: ' + error.message);
     }
 }
 
@@ -736,7 +743,7 @@ async function deletePurchase(id) {
             alert('فشل الحذف');
         }
     } catch (error) {
-        alert('خطأ في الاتصال');
+        alert('خطأ في الاتصال: ' + error.message);
     }
 }
 
@@ -823,7 +830,7 @@ document.getElementById('shipmentForm').addEventListener('submit', async (e) => 
         closeShipmentModal();
         await loadShipments();
     } catch (error) {
-        alert('حدث خطأ');
+        alert('حدث خطأ: ' + error.message);
     }
 });
 
@@ -1097,7 +1104,7 @@ document.getElementById('changePasswordForm').addEventListener('submit', async f
             alert(data.error || 'فشل تغيير كلمة المرور');
         }
     } catch (error) {
-        alert('خطأ في الاتصال');
+        alert('خطأ في الاتصال: ' + error.message);
     }
 });
 
