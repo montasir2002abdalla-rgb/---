@@ -16,7 +16,7 @@ body {
     align-items: center;
     justify-content: center;
     min-height: 100vh;
-    background: linear-gradient(135deg, #00b8d4, #00acc1, #0097a7); /* تدرج سماوي */
+    background: linear-gradient(135deg, #00b8d4, #00acc1, #0097a7);
     padding: 20px;
     position: relative;
     overflow: hidden;
@@ -45,7 +45,7 @@ body {
     border: 1px solid rgba(255, 255, 255, 0.2);
     padding: 40px 30px;
     border-radius: 20px;
-    box-shadow: 0 25px 50px rgba(0, 150, 170, 0.5); /* ظل سماوي */
+    box-shadow: 0 25px 50px rgba(0, 150, 170, 0.5);
     width: 100%;
     max-width: 400px;
     text-align: center;
@@ -61,7 +61,7 @@ body {
 
 .login-logo i {
     font-size: 4rem;
-    color: #00acc1; /* لون سماوي */
+    color: #00acc1;
     margin-bottom: 15px;
     animation: float 3s ease-in-out infinite;
     filter: drop-shadow(0 10px 15px rgba(0, 170, 200, 0.4));
@@ -131,10 +131,10 @@ body {
     padding-top: 15px;
 }
 
-/* ===== شريط التنبيهات ===== */
+/* ===== شريط التنبيهات (مُحسّن للهاتف) ===== */
 .notification-bar {
     position: fixed;
-    top: 70px; /* تحت الهيدر */
+    top: 70px;
     left: 0;
     right: 0;
     background: #e74c3c;
@@ -147,11 +147,6 @@ body {
     animation: slideDown 0.3s;
     border-radius: 0 0 8px 8px;
     box-shadow: 0 5px 15px rgba(231, 76, 60, 0.3);
-}
-
-@keyframes slideDown {
-    from { transform: translateY(-100%); }
-    to { transform: translateY(0); }
 }
 
 .notification-bar i {
@@ -173,7 +168,7 @@ body {
     opacity: 1;
 }
 
-/* ===== الهيدر العلوي ===== */
+/* ===== الهيدر العلوي (مُحسّن) ===== */
 .app-header {
     position: fixed;
     top: 0;
@@ -185,19 +180,14 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 20px;
+    padding: 0 15px;
     z-index: 99;
-    transition: margin-right 0.3s;
-}
-
-.sidebar.collapsed ~ .main-content .app-header {
-    margin-right: 80px;
 }
 
 .header-right {
     display: flex;
     align-items: center;
-    gap: 15px;
+    gap: 10px;
 }
 
 .header-left {
@@ -215,7 +205,7 @@ body {
     white-space: nowrap;
 }
 
-/* زر القائمة الجانبية في الهيدر */
+/* زر القائمة الجانبية */
 .toggle-sidebar-btn {
     background: linear-gradient(135deg, #f39c12, #e67e22);
     color: white;
@@ -233,11 +223,11 @@ body {
 
 .toggle-sidebar-btn:hover {
     background: linear-gradient(135deg, #e67e22, #d35400);
-    transform: scale(1.1) rotate(90deg);
+    transform: scale(1.1);
     box-shadow: 0 8px 20px rgba(243, 156, 18, 0.6);
 }
 
-/* زر الرجوع في الهيدر */
+/* زر الرجوع */
 .back-btn {
     background: linear-gradient(135deg, #3498db, #2980b9);
     color: white;
@@ -247,7 +237,7 @@ body {
     font-size: 1rem;
     font-weight: 600;
     box-shadow: 0 4px 10px rgba(52, 152, 219, 0.4);
-    transition: all 0.3s ease;
+    transition: all 0.3s;
     display: inline-flex;
     align-items: center;
     gap: 8px;
@@ -265,10 +255,6 @@ body {
     box-shadow: 0 6px 15px rgba(52, 152, 219, 0.6);
 }
 
-.back-btn:hover i {
-    transform: translateX(-3px);
-}
-
 /* زر تسجيل الخروج */
 .btn-logout {
     background: linear-gradient(135deg, #e74c3c, #c0392b);
@@ -279,7 +265,7 @@ body {
     font-size: 1rem;
     font-weight: 600;
     box-shadow: 0 4px 10px rgba(231, 76, 60, 0.4);
-    transition: all 0.3s ease;
+    transition: all 0.3s;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -292,16 +278,16 @@ body {
     box-shadow: 0 6px 15px rgba(231, 76, 60, 0.6);
 }
 
-/* ===== القائمة الجانبية ===== */
+/* ===== القائمة الجانبية (تصميم أساسي) ===== */
 .sidebar {
     position: fixed;
-    top: 70px; /* تحت الهيدر */
+    top: 70px;
     right: 0;
     width: 260px;
     height: calc(100vh - 70px);
     background: linear-gradient(180deg, #2c3e50, #1a252f);
     color: white;
-    transition: width 0.3s ease;
+    transition: width 0.3s ease, right 0.3s ease;
     z-index: 98;
     overflow-y: auto;
     overflow-x: hidden;
@@ -421,7 +407,7 @@ body {
 /* ===== المحتوى الرئيسي ===== */
 .main-content {
     margin-right: 260px;
-    margin-top: 70px; /* مساحة للهيدر */
+    margin-top: 70px;
     padding: 20px;
     min-height: calc(100vh - 70px);
     background: #f0f2f5;
@@ -444,11 +430,6 @@ body {
 
 .section.active {
     display: block;
-}
-
-/* إخفاء أي رأس قسم قديم (لم نعد نستخدمه) */
-.section-header {
-    display: none !important;
 }
 
 h2 {
@@ -514,24 +495,64 @@ h2 {
     height: 300px;
 }
 
-/* ===== الأزرار العامة (تحسينات بالألوان والأشكال) ===== */
+/* ===== الأزرار العامة ===== */
 .btn {
-    padding: 10px 20px;
+    padding: 12px 24px;
     border: none;
-    border-radius: 50px; /* شكل دائري أكثر */
+    border-radius: 50px;
     cursor: pointer;
     font-size: 1rem;
-    margin: 5px;
+    margin: 8px 5px;
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    transition: all 0.3s;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    justify-content: center;
+    gap: 10px;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
     font-weight: 600;
+    letter-spacing: 0.5px;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.4s, height 0.4s;
+    z-index: 0;
+}
+
+.btn:hover::after {
+    width: 200px;
+    height: 200px;
 }
 
 .btn i {
-    font-size: 1.1rem;
+    font-size: 1.2rem;
+    position: relative;
+    z-index: 1;
+    transition: transform 0.3s;
+}
+
+.btn span {
+    position: relative;
+    z-index: 1;
+}
+
+.btn:hover i {
+    transform: translateX(-3px) scale(1.1);
+}
+
+.btn:active {
+    transform: scale(0.95);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
 
 .btn-primary {
@@ -541,8 +562,7 @@ h2 {
 
 .btn-primary:hover {
     background: linear-gradient(135deg, #2980b9, #1f618d);
-    transform: scale(1.05) translateY(-2px);
-    box-shadow: 0 8px 20px rgba(52, 152, 219, 0.5);
+    box-shadow: 0 8px 25px rgba(52, 152, 219, 0.6);
 }
 
 .btn-secondary {
@@ -552,8 +572,7 @@ h2 {
 
 .btn-secondary:hover {
     background: linear-gradient(135deg, #7f8c8d, #6c7a7d);
-    transform: scale(1.05) translateY(-2px);
-    box-shadow: 0 8px 20px rgba(127, 140, 141, 0.4);
+    box-shadow: 0 8px 25px rgba(127, 140, 141, 0.5);
 }
 
 .btn-success {
@@ -563,8 +582,7 @@ h2 {
 
 .btn-success:hover {
     background: linear-gradient(135deg, #2ecc71, #27ae60);
-    transform: scale(1.05) translateY(-2px);
-    box-shadow: 0 8px 20px rgba(39, 174, 96, 0.5);
+    box-shadow: 0 8px 25px rgba(39, 174, 96, 0.6);
 }
 
 .btn-danger {
@@ -574,8 +592,7 @@ h2 {
 
 .btn-danger:hover {
     background: linear-gradient(135deg, #c0392b, #a93226);
-    transform: scale(1.05) translateY(-2px);
-    box-shadow: 0 8px 20px rgba(231, 76, 60, 0.5);
+    box-shadow: 0 8px 25px rgba(231, 76, 60, 0.6);
 }
 
 .btn-warning {
@@ -585,8 +602,7 @@ h2 {
 
 .btn-warning:hover {
     background: linear-gradient(135deg, #e67e22, #d35400);
-    transform: scale(1.05) translateY(-2px);
-    box-shadow: 0 8px 20px rgba(243, 156, 18, 0.5);
+    box-shadow: 0 8px 25px rgba(243, 156, 18, 0.6);
 }
 
 .btn-block {
@@ -594,26 +610,26 @@ h2 {
 }
 
 .btn-sm {
-    padding: 5px 15px;
+    padding: 8px 16px;
     font-size: 0.9rem;
-    margin: 2px;
+    margin: 4px 2px;
 }
 
-/* ===== الجداول ===== */
+/* ===== الجداول (محسنة للهاتف) ===== */
 .table-responsive {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     margin: 15px 0;
+    border-radius: 12px;
+    background: white;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
 }
 
 table {
     width: 100%;
     background: white;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
     border-collapse: collapse;
-    min-width: 600px;
+    min-width: 600px; /* يسمح بالتمرير الأفقي على الهاتف */
 }
 
 th {
@@ -621,18 +637,24 @@ th {
     color: white;
     padding: 12px;
     font-weight: 600;
+    white-space: nowrap;
 }
 
 td {
     padding: 10px;
     border-bottom: 1px solid #ecf0f1;
+    white-space: nowrap;
 }
 
 tr:hover {
     background: #f5f5f5;
 }
 
+/* تحويل الجدول إلى بطاقات على الهاتف */
 @media (max-width: 768px) {
+    table {
+        min-width: 100%;
+    }
     table thead {
         display: none;
     }
@@ -653,6 +675,7 @@ tr:hover {
         padding-right: 50%;
         border-bottom: 1px solid #eee;
         position: relative;
+        white-space: normal;
     }
     table td:last-child {
         border-bottom: none;
@@ -666,6 +689,9 @@ tr:hover {
         font-weight: bold;
         text-align: right;
         color: #2c3e50;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 }
 
@@ -744,7 +770,7 @@ input:focus, select:focus {
     transform: rotate(90deg);
 }
 
-/* ===== عناصر البيع والشراء ===== */
+/* ===== عناصر البيع والشراء (محسنة للهاتف) ===== */
 .sell-item, .buy-item {
     display: flex;
     gap: 10px;
@@ -781,17 +807,21 @@ input:focus, select:focus {
     background: linear-gradient(135deg, #e74c3c, #c0392b);
     color: white;
     border: none;
-    padding: 8px 12px;
+    padding: 10px 16px;
     border-radius: 50px;
     cursor: pointer;
     transition: all 0.3s;
-    box-shadow: 0 4px 10px rgba(231, 76, 60, 0.3);
+    box-shadow: 0 4px 15px rgba(231, 76, 60, 0.4);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
 }
 
 .sell-item button:hover, .buy-item button:hover {
     background: linear-gradient(135deg, #c0392b, #a93226);
-    transform: scale(1.1);
-    box-shadow: 0 6px 15px rgba(231, 76, 60, 0.5);
+    transform: scale(1.05);
+    box-shadow: 0 8px 25px rgba(231, 76, 60, 0.7);
 }
 
 .total {
@@ -803,7 +833,7 @@ input:focus, select:focus {
     text-shadow: 0 2px 5px rgba(39, 174, 96, 0.2);
 }
 
-/* ===== شريط الإجراءات ===== */
+/* ===== شريط الإجراءات (محسن للهاتف) ===== */
 .action-bar {
     display: flex;
     gap: 10px;
@@ -814,6 +844,19 @@ input:focus, select:focus {
 .action-bar input {
     flex: 1;
     min-width: 200px;
+}
+
+@media (max-width: 768px) {
+    .action-bar {
+        flex-direction: column;
+    }
+    .action-bar input {
+        width: 100%;
+    }
+    .action-bar .btn {
+        width: 100%;
+        margin: 5px 0;
+    }
 }
 
 /* ===== الحالات ===== */
@@ -836,31 +879,113 @@ input:focus, select:focus {
     color: white;
 }
 
-/* ===== استجابة للهواتف ===== */
+/* ===== تحسينات الهاتف المتقدمة للقائمة الجانبية ===== */
 @media (max-width: 768px) {
     .sidebar {
-        width: 80px;
+        right: -100%; /* مخفية خارج الشاشة */
+        width: 280px; /* عرض مناسب */
+        transition: right 0.3s ease;
+        box-shadow: 2px 0 10px rgba(0,0,0,0.2);
     }
-    .sidebar-header h3, .sidebar-menu li span {
-        display: none;
+    .sidebar.show {
+        right: 0; /* تظهر عند الضغط */
     }
-    .sidebar-menu li {
-        justify-content: center;
-        padding: 15px 0;
-        margin: 5px;
+    .sidebar.collapsed {
+        width: 280px; /* لا نستخدم التصغير على الهاتف */
     }
-    .sidebar-menu li i {
-        width: auto;
-        font-size: 1.5rem;
-        margin: 0;
+    .sidebar.collapsed .sidebar-header h3,
+    .sidebar.collapsed .sidebar-menu li span {
+        display: block;
     }
-    .sidebar-menu li:hover {
-        transform: none;
+    .sidebar.collapsed .sidebar-menu li {
+        justify-content: flex-start;
+        padding: 12px 25px;
+    }
+    .sidebar.collapsed .sidebar-menu li i {
+        margin-left: 15px;
+        font-size: 1.2rem;
     }
     .main-content {
-        margin-right: 80px;
+        margin-right: 0;
     }
-    .app-header .header-title {
+    /* إضافة طبقة تعتيم عند فتح القائمة */
+    .sidebar-overlay {
+        display: none;
+        position: fixed;
+        top: 70px;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 97;
+    }
+    .sidebar-overlay.show {
+        display: block;
+    }
+    /* تحسين زر الرجوع */
+    .back-btn {
+        padding: 6px 12px;
+        font-size: 0.9rem;
+    }
+    /* تحسين شريط التنبيهات */
+    .notification-bar {
+        top: 60px;
+        padding: 10px 15px;
+    }
+    .notification-bar span {
+        font-size: 0.9rem;
+    }
+    /* تحسين البطاقات */
+    .stats-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+    .stat-card {
+        padding: 12px;
+    }
+    .stat-value {
+        font-size: 1.4rem;
+    }
+    .stat-label {
+        font-size: 0.8rem;
+    }
+    .stat-card i {
+        font-size: 2rem;
+    }
+    /* تحسين الرسوم البيانية */
+    .chart-container {
+        height: 200px;
+        padding: 10px;
+    }
+    /* تحسين عناصر البيع والشراء */
+    .sell-item, .buy-item {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .sell-item select, .buy-item select,
+    .sell-item input, .buy-item input,
+    .sell-item span, .buy-item span {
+        width: 100%;
+    }
+    .sell-item button, .buy-item button {
+        width: 100%;
+        justify-content: center;
+    }
+    .total {
+        font-size: 1.5rem;
+    }
+    /* تحسين النوافذ المنبثقة */
+    .modal-content {
+        padding: 20px;
+        max-width: 95%;
+    }
+    .login-box {
+        padding: 30px 20px;
+    }
+    .login-logo h1 {
+        font-size: 1.8rem;
+    }
+    .header-title {
         font-size: 1.2rem;
         position: static;
         transform: none;
@@ -871,42 +996,6 @@ input:focus, select:focus {
     }
     .btn-logout i {
         margin: 0;
-    }
-    .stats-grid {
-        grid-template-columns: 1fr 1fr;
-    }
-    .stat-card {
-        padding: 15px;
-    }
-    .stat-value {
-        font-size: 1.5rem;
-    }
-    .sell-item, .buy-item {
-        flex-direction: column;
-        align-items: stretch;
-    }
-    .sell-item select, .buy-item select,
-    .sell-item input, .buy-item input,
-    .sell-item span, .buy-item span {
-        width: 100%;
-    }
-    .modal-content {
-        padding: 20px;
-    }
-    .login-box {
-        padding: 30px 20px;
-    }
-    .login-logo h1 {
-        font-size: 1.8rem;
-    }
-    .action-bar {
-        flex-direction: column;
-    }
-    .action-bar input {
-        width: 100%;
-    }
-    .chart-container {
-        height: 250px;
     }
 }
 
@@ -957,323 +1046,4 @@ input:focus, select:focus {
     .stats-grid {
         break-inside: avoid;
     }
-}
-/* ===== الأزرار العامة (تحسينات بالألوان والأشكال) ===== */
-.btn {
-    padding: 12px 24px;
-    border: none;
-    border-radius: 50px; /* شكل دائري أكثر */
-    cursor: pointer;
-    font-size: 1rem;
-    margin: 8px 5px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    font-weight: 600;
-    letter-spacing: 0.5px;
-    position: relative;
-    overflow: hidden;
-}
-
-.btn::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 0;
-    height: 0;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.3);
-    transform: translate(-50%, -50%);
-    transition: width 0.4s, height 0.4s;
-    z-index: 0;
-}
-
-.btn:hover::after {
-    width: 200px;
-    height: 200px;
-}
-
-.btn i {
-    font-size: 1.2rem;
-    position: relative;
-    z-index: 1;
-    transition: transform 0.3s;
-}
-
-.btn span {
-    position: relative;
-    z-index: 1;
-}
-
-.btn:hover i {
-    transform: translateX(-3px) scale(1.1);
-}
-
-.btn:active {
-    transform: scale(0.95);
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-}
-
-/* أزرار أساسية بتدرجات */
-.btn-primary {
-    background: linear-gradient(135deg, #3498db, #2980b9);
-    color: white;
-}
-
-.btn-primary:hover {
-    background: linear-gradient(135deg, #2980b9, #1f618d);
-    box-shadow: 0 8px 25px rgba(52, 152, 219, 0.6);
-}
-
-.btn-secondary {
-    background: linear-gradient(135deg, #95a5a6, #7f8c8d);
-    color: white;
-}
-
-.btn-secondary:hover {
-    background: linear-gradient(135deg, #7f8c8d, #6c7a7d);
-    box-shadow: 0 8px 25px rgba(127, 140, 141, 0.5);
-}
-
-.btn-success {
-    background: linear-gradient(135deg, #27ae60, #2ecc71);
-    color: white;
-}
-
-.btn-success:hover {
-    background: linear-gradient(135deg, #2ecc71, #27ae60);
-    box-shadow: 0 8px 25px rgba(39, 174, 96, 0.6);
-}
-
-.btn-danger {
-    background: linear-gradient(135deg, #e74c3c, #c0392b);
-    color: white;
-}
-
-.btn-danger:hover {
-    background: linear-gradient(135deg, #c0392b, #a93226);
-    box-shadow: 0 8px 25px rgba(231, 76, 60, 0.6);
-}
-
-.btn-warning {
-    background: linear-gradient(135deg, #f39c12, #e67e22);
-    color: white;
-}
-
-.btn-warning:hover {
-    background: linear-gradient(135deg, #e67e22, #d35400);
-    box-shadow: 0 8px 25px rgba(243, 156, 18, 0.6);
-}
-
-.btn-block {
-    width: 100%;
-}
-
-.btn-sm {
-    padding: 8px 16px;
-    font-size: 0.9rem;
-    margin: 4px 2px;
-}
-
-.btn-sm i {
-    font-size: 1rem;
-}
-
-/* أزرار خاصة بعناصر البيع والشراء */
-.sell-item button, .buy-item button {
-    background: linear-gradient(135deg, #e74c3c, #c0392b);
-    color: white;
-    border: none;
-    padding: 10px 16px;
-    border-radius: 50px;
-    cursor: pointer;
-    transition: all 0.3s;
-    box-shadow: 0 4px 15px rgba(231, 76, 60, 0.4);
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    font-weight: 600;
-    position: relative;
-    overflow: hidden;
-}
-
-.sell-item button::after, .buy-item button::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 0;
-    height: 0;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.3);
-    transform: translate(-50%, -50%);
-    transition: width 0.4s, height 0.4s;
-}
-
-.sell-item button:hover::after, .buy-item button:hover::after {
-    width: 150px;
-    height: 150px;
-}
-
-.sell-item button:hover, .buy-item button:hover {
-    background: linear-gradient(135deg, #c0392b, #a93226);
-    transform: scale(1.05);
-    box-shadow: 0 8px 25px rgba(231, 76, 60, 0.7);
-}
-
-.sell-item button:active, .buy-item button:active {
-    transform: scale(0.95);
-}
-
-/* زر إضافة صنف في المبيعات والمشتريات */
-#sellSection .btn-secondary, #buySection .btn-secondary {
-    background: linear-gradient(135deg, #f39c12, #e67e22);
-    color: white;
-    box-shadow: 0 4px 15px rgba(243, 156, 18, 0.4);
-}
-
-#sellSection .btn-secondary:hover, #buySection .btn-secondary:hover {
-    background: linear-gradient(135deg, #e67e22, #d35400);
-    box-shadow: 0 8px 25px rgba(243, 156, 18, 0.6);
-}
-
-/* زر تأكيد البيع والشراء */
-#sellSection .btn-success, #buySection .btn-success {
-    background: linear-gradient(135deg, #27ae60, #2ecc71);
-    box-shadow: 0 4px 15px rgba(39, 174, 96, 0.4);
-}
-
-#sellSection .btn-success:hover, #buySection .btn-success:hover {
-    background: linear-gradient(135deg, #2ecc71, #27ae60);
-    box-shadow: 0 8px 25px rgba(39, 174, 96, 0.6);
-}
-
-/* أزرار الإجراءات في الجداول (تعديل، حذف) */
-.btn-warning.btn-sm, .btn-danger.btn-sm {
-    padding: 6px 12px;
-    border-radius: 30px;
-    font-size: 0.85rem;
-}
-
-.btn-warning.btn-sm i, .btn-danger.btn-sm i {
-    font-size: 0.9rem;
-}
-
-/* زر طباعة */
-.btn-secondary {
-    background: linear-gradient(135deg, #95a5a6, #7f8c8d);
-}
-
-.btn-secondary:hover {
-    background: linear-gradient(135deg, #7f8c8d, #6c7a7d);
-}
-
-/* تحسينات للهواتف */
-@media (max-width: 768px) {
-    .btn {
-        padding: 10px 18px;
-        font-size: 0.9rem;
-    }
-    
-    .btn-sm {
-        padding: 5px 10px;
-        font-size: 0.8rem;
-    }
-    
-    .sell-item button, .buy-item button {
-        padding: 8px 14px;
-    }
-}
-/* ===== تنسيق قائمة طريقة الدفع في البيع ===== */
-#sellSection .form-group select {
-    width: 100%;
-    padding: 14px 20px;
-    border: 2px solid #e0f7fa;
-    border-radius: 50px;
-    background: linear-gradient(135deg, #ffffff, #f5f5f5);
-    color: #006064;
-    font-size: 1.1rem;
-    font-weight: 600;
-    cursor: pointer;
-    appearance: none;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2300acc1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
-    background-repeat: no-repeat;
-    background-position: left 20px center;
-    background-size: 16px;
-    box-shadow: 0 4px 10px rgba(0, 172, 193, 0.2);
-    transition: all 0.3s ease;
-}
-
-#sellSection .form-group select:hover {
-    border-color: #00acc1;
-    box-shadow: 0 6px 15px rgba(0, 172, 193, 0.3);
-    transform: translateY(-2px);
-}
-
-#sellSection .form-group select:focus {
-    outline: none;
-    border-color: #00838f;
-    box-shadow: 0 0 0 4px rgba(0, 131, 143, 0.2);
-}
-
-#sellSection .form-group select option {
-    background: white;
-    color: #006064;
-    padding: 12px;
-    font-weight: normal;
-}
-
-#sellSection .form-group label {
-    display: block;
-    margin-bottom: 8px;
-    color: #006064;
-    font-weight: 700;
-    font-size: 1rem;
-    letter-spacing: 0.5px;
-}
-
-#sellSection .form-group label i {
-    color: #00acc1;
-    margin-left: 8px;
-    font-size: 1.2rem;
-}
-
-/* تنسيق مماثل لقائمة طريقة الدفع في الشراء إذا أردت التناسق */
-#buySection .form-group select {
-    width: 100%;
-    padding: 14px 20px;
-    border: 2px solid #e0f7fa;
-    border-radius: 50px;
-    background: linear-gradient(135deg, #ffffff, #f5f5f5);
-    color: #006064;
-    font-size: 1.1rem;
-    font-weight: 600;
-    cursor: pointer;
-    appearance: none;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2300acc1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
-    background-repeat: no-repeat;
-    background-position: left 20px center;
-    background-size: 16px;
-    box-shadow: 0 4px 10px rgba(0, 172, 193, 0.2);
-    transition: all 0.3s ease;
-}
-
-#buySection .form-group select:hover {
-    border-color: #00acc1;
-    box-shadow: 0 6px 15px rgba(0, 172, 193, 0.3);
-    transform: translateY(-2px);
-}
-
-#buySection .form-group select:focus {
-    outline: none;
-    border-color: #00838f;
-    box-shadow: 0 0 0 4px rgba(0, 131, 143, 0.2);
 }

@@ -18,11 +18,11 @@
             </div>
             <form id="loginForm">
                 <div class="form-group">
-                    <label><i class="fas fa-user"></i> اسم المستخدم</label>
+                    <!-- <label><i class="fas fa-user"></i> اسم المستخدم</label> -->
                     <input type="text" id="username" value="عاصم عبدالله ود كمون" readonly>
                 </div>
                 <div class="form-group">
-                    <label><i class="fas fa-lock"></i> كلمة المرور</label>
+                    <!-- <label><i class="fas fa-lock"></i> كلمة المرور</label> -->
                     <input type="password" id="password" placeholder="أدخل كلمة المرور" required>
                 </div>
                 <button type="submit" class="btn btn-primary btn-block">دخول</button>
@@ -259,19 +259,19 @@
                 </div>
                 <div class="form-group">
                     <label>الكمية</label>
-                    <input type="number" id="itemQuantity" required>
+                    <input type="text" id="itemQuantity" required>
                 </div>
                 <div class="form-group">
                     <label>سعر البيع</label>
-                    <input type="number" step="0.01" id="itemPrice" required>
+                    <input type="text" step="0.01" id="itemPrice" required>
                 </div>
                 <div class="form-group">
                     <label>سعر الشراء (التكلفة)</label>
-                    <input type="number" step="0.01" id="itemCost" value="0">
+                    <input type="text" step="0.01" id="itemCost" value="0">
                 </div>
                 <div class="form-group">
                     <label>أقل كمية للإنذار</label>
-                    <input type="number" id="itemMinStock" value="0">
+                    <input type="text" id="itemMinStock" value="0">
                 </div>
                 <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> حفظ</button>
             </form>

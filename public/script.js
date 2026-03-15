@@ -7,18 +7,30 @@ let dashboardChart, profitChart;
 
 // ==================== استعادة الجلسة عند تحميل الصفحة ====================
 window.addEventListener('load', async function() {
-    // التحقق من وجود تسجيل دخول سابق
     const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true' || localStorage.getItem('authToken');
     
     if (isLoggedIn) {
-        // استعادة حالة القائمة الجانبية
-        const sidebarState = localStorage.getItem('sidebarCollapsed') === 'true';
-        if (sidebarState) {
-            document.querySelector('.sidebar')?.classList.add('collapsed');
-            const btnIcon = document.querySelector('.toggle-sidebar-btn i');
-            if (btnIcon) {
-                btnIcon.classList.remove('fa-bars');
-                btnIcon.classList.add('fa-chevron-right');
+        // استعادة حالة القائمة الجانبية حسب حجم الشاشة
+        const sidebar = document.querySelector('.sidebar');
+        const overlay = document.querySelector('.sidebar-overlay');
+        
+        if (window.innerWidth <= 768) {
+            // على الهاتف: نبدأ بالقائمة مخفية
+            sidebar?.classList.remove('show');
+            sidebar?.classList.remove('collapsed');
+            overlay?.classList.remove('show');
+        } else {
+            // على سطح المكتب: استعادة حالة الطي
+            const sidebarState = localStorage.getItem('sidebarCollapsed') === 'true';
+            if (sidebarState) {
+                sidebar?.classList.add('collapsed');
+                const btnIcon = document.querySelector('.toggle-sidebar-btn i');
+                if (btnIcon) {
+                    btnIcon.classList.remove('fa-bars');
+                    btnIcon.classList.add('fa-chevron-right');
+                }
+            } else {
+                sidebar?.classList.remove('collapsed');
             }
         }
 
@@ -26,7 +38,7 @@ window.addEventListener('load', async function() {
         document.getElementById('loginContainer').style.display = 'none';
         document.getElementById('mainApp').style.display = 'block';
 
-        // محاولة تحميل البيانات (إذا فشلت، لا مشكلة)
+        // تحميل البيانات
         try {
             await loadItems();
             await loadShipments();
@@ -45,6 +57,25 @@ window.addEventListener('load', async function() {
     }
 });
 
+// إنشاء طبقة التعتيم وإضافتها إلى DOM (إذا لم تكن موجودة)
+function createOverlay() {
+    if (!document.querySelector('.sidebar-overlay')) {
+        const overlay = document.createElement('div');
+        overlay.className = 'sidebar-overlay';
+        overlay.onclick = closeSidebarOnMobile;
+        document.body.appendChild(overlay);
+    }
+}
+createOverlay();
+
+// إغلاق القائمة الجانبية على الهاتف
+function closeSidebarOnMobile() {
+    if (window.innerWidth <= 768) {
+        document.querySelector('.sidebar')?.classList.remove('show');
+        document.querySelector('.sidebar-overlay')?.classList.remove('show');
+    }
+}
+
 // ==================== تسجيل الدخول ====================
 document.getElementById('loginForm').addEventListener('submit', async function(e) {
     e.preventDefault();
@@ -59,7 +90,6 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
         });
         const data = await res.json();
         if (res.ok) {
-            // تخزين علم تسجيل الدخول (إذا كان هناك token نخزنه أيضاً)
             if (data.token) {
                 localStorage.setItem('authToken', data.token);
             } else {
@@ -100,6 +130,7 @@ function logout() {
 // ==================== التنقل بين الأقسام ====================
 function goBack() {
     showSection('dashboard');
+    closeSidebarOnMobile(); // إغلاق القائمة إن كانت مفتوحة
 }
 
 function hideNotification() {
@@ -144,6 +175,9 @@ function showSection(section, save = true) {
         localStorage.setItem('currentSection', section);
     }
 
+    // إغلاق القائمة الجانبية على الهاتف بعد اختيار عنصر
+    closeSidebarOnMobile();
+
     if (section === 'dashboard') {
         document.querySelector('.sidebar-menu li:nth-child(1)').classList.add('active');
         document.getElementById('dashboardSection').classList.add('active');
@@ -180,18 +214,64 @@ function showSection(section, save = true) {
 // ==================== طي القائمة الجانبية مع الحفظ ====================
 function toggleSidebar() {
     const sidebar = document.querySelector('.sidebar');
-    sidebar.classList.toggle('collapsed');
+    const overlay = document.querySelector('.sidebar-overlay');
     const btnIcon = document.querySelector('.toggle-sidebar-btn i');
-    if (sidebar.classList.contains('collapsed')) {
-        btnIcon.classList.remove('fa-bars');
-        btnIcon.classList.add('fa-chevron-right');
-        localStorage.setItem('sidebarCollapsed', 'true');
+
+    if (window.innerWidth <= 768) {
+        // على الهاتف: نبدل حالة الظهور
+        sidebar.classList.toggle('show');
+        overlay.classList.toggle('show');
+        // تغيير الأيقونة بين bars و times للإشارة إلى الإغلاق
+        if (sidebar.classList.contains('show')) {
+            btnIcon.classList.remove('fa-bars');
+            btnIcon.classList.add('fa-times');
+        } else {
+            btnIcon.classList.remove('fa-times');
+            btnIcon.classList.add('fa-bars');
+        }
     } else {
-        btnIcon.classList.remove('fa-chevron-right');
-        btnIcon.classList.add('fa-bars');
-        localStorage.setItem('sidebarCollapsed', 'false');
+        // على سطح المكتب: طي عادي
+        sidebar.classList.toggle('collapsed');
+        if (sidebar.classList.contains('collapsed')) {
+            btnIcon.classList.remove('fa-bars');
+            btnIcon.classList.add('fa-chevron-right');
+            localStorage.setItem('sidebarCollapsed', 'true');
+        } else {
+            btnIcon.classList.remove('fa-chevron-right');
+            btnIcon.classList.add('fa-bars');
+            localStorage.setItem('sidebarCollapsed', 'false');
+        }
     }
 }
+
+// الاستماع لتغيير حجم الشاشة
+window.addEventListener('resize', function() {
+    const sidebar = document.querySelector('.sidebar');
+    const overlay = document.querySelector('.sidebar-overlay');
+    const btnIcon = document.querySelector('.toggle-sidebar-btn i');
+
+    if (window.innerWidth <= 768) {
+        // انتقلنا إلى وضع الهاتف
+        sidebar.classList.remove('collapsed', 'show');
+        overlay.classList.remove('show');
+        btnIcon?.classList.remove('fa-chevron-right', 'fa-times');
+        btnIcon?.classList.add('fa-bars');
+    } else {
+        // انتقلنا إلى وضع سطح المكتب
+        sidebar.classList.remove('show');
+        overlay.classList.remove('show');
+        const sidebarState = localStorage.getItem('sidebarCollapsed') === 'true';
+        if (sidebarState) {
+            sidebar.classList.add('collapsed');
+            btnIcon?.classList.remove('fa-bars', 'fa-times');
+            btnIcon?.classList.add('fa-chevron-right');
+        } else {
+            sidebar.classList.remove('collapsed');
+            btnIcon?.classList.remove('fa-chevron-right', 'fa-times');
+            btnIcon?.classList.add('fa-bars');
+        }
+    }
+});
 
 // ==================== الأصناف ====================
 async function loadItems() {
@@ -686,6 +766,7 @@ async function loadDashboard() {
             },
             options: {
                 responsive: true,
+                maintainAspectRatio: false,
                 plugins: {
                     legend: { position: 'top' },
                     title: { display: true, text: 'المبيعات الشهرية الفعلية' }
@@ -742,6 +823,7 @@ async function loadProfit() {
             },
             options: {
                 responsive: true,
+                maintainAspectRatio: false,
                 plugins: {
                     legend: { display: false },
                     title: { display: true, text: 'تحليل الأرباح' }
@@ -870,6 +952,3 @@ function printSection(sectionId) {
     printWindow.document.close();
     printWindow.print();
 }
-
-// ==================== بدء التحميل ====================
-loadItems();
