@@ -1031,3 +1031,11 @@ input:focus, select:focus {
         break-inside: avoid;
     }
 }
+.profit-negative {
+    color: #e74c3c !important;
+    font-weight: bold;
+}
+.profit-positive {
+    color: #27ae60 !important;
+    font-weight: bold;
+}

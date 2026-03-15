@@ -7,7 +7,7 @@ let sales = [];
 let purchases = [];
 let dashboardChart, profitChart;
 
-// ==================== استعادة الجلسة ====================
+// ==================== استعادة الجلسة عند تحميل الصفحة ====================
 window.addEventListener('load', async function() {
     const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true' || localStorage.getItem('authToken');
     
@@ -120,7 +120,7 @@ function logout() {
     document.getElementById('password').value = '';
 }
 
-// ==================== التنقل ====================
+// ==================== التنقل بين الأقسام ====================
 function goBack() {
     showSection('dashboard');
     closeSidebarOnMobile();
@@ -203,7 +203,7 @@ function showSection(section, save = true) {
     }
 }
 
-// ==================== القائمة الجانبية (مثل السابق) ====================
+// ==================== طي القائمة الجانبية ====================
 function toggleSidebar() {
     const sidebar = document.querySelector('.sidebar');
     const overlay = document.querySelector('.sidebar-overlay');
@@ -259,7 +259,7 @@ window.addEventListener('resize', function() {
     }
 });
 
-// ==================== الأصناف (مبسطة) ====================
+// ==================== الأصناف (مع دعم القطعة والكرتونة) ====================
 async function loadItems() {
     const search = document.getElementById('searchItem')?.value || '';
     try {
@@ -272,9 +272,11 @@ async function loadItems() {
             <tr>
                 <td data-label="الاسم">${item.name}</td>
                 <td data-label="الكمية">${item.quantity}</td>
-                <td data-label="سعر البيع">${item.price}</td>
-                <td data-label="سعر الشراء">${item.cost}</td>
-                <td data-label="أقل كمية">${item.min_stock}</td>
+                <td data-label="سعر بيع القطعة">${item.price_piece || 0}</td>
+                <td data-label="سعر شراء القطعة">${item.cost_piece || 0}</td>
+                <td data-label="سعر بيع الكرتونة">${item.price_carton || 0}</td>
+                <td data-label="سعر شراء الكرتونة">${item.cost_carton || 0}</td>
+                <td data-label="أقل كمية">${item.min_stock || 0}</td>
                 <td data-label="إجراءات">
                     <button class="btn btn-warning btn-sm" onclick="editItem(${item.id})"><i class="fas fa-edit"></i></button>
                     <button class="btn btn-danger btn-sm" onclick="deleteItem(${item.id})"><i class="fas fa-trash"></i></button>
@@ -291,6 +293,8 @@ function showAddItemModal() {
     document.getElementById('modalTitle').innerText = 'إضافة صنف';
     document.getElementById('itemForm').reset();
     document.getElementById('itemId').value = '';
+    document.getElementById('itemPiecesPerCarton').value = '1'; // قيمة افتراضية
+    calculateItemProfit();
     document.getElementById('itemModal').style.display = 'flex';
 }
 
@@ -300,10 +304,14 @@ function editItem(id) {
     document.getElementById('modalTitle').innerText = 'تعديل صنف';
     document.getElementById('itemId').value = item.id;
     document.getElementById('itemName').value = item.name;
+    document.getElementById('itemPiecesPerCarton').value = item.pieces_per_carton || 1;
+    document.getElementById('itemCostPiece').value = item.cost_piece || 0;
+    document.getElementById('itemPricePiece').value = item.price_piece || 0;
+    document.getElementById('itemCostCarton').value = item.cost_carton || 0;
+    document.getElementById('itemPriceCarton').value = item.price_carton || 0;
     document.getElementById('itemQuantity').value = item.quantity;
-    document.getElementById('itemPrice').value = item.price;
-    document.getElementById('itemCost').value = item.cost;
-    document.getElementById('itemMinStock').value = item.min_stock;
+    document.getElementById('itemMinStock').value = item.min_stock || 0;
+    calculateItemProfit();
     document.getElementById('itemModal').style.display = 'flex';
 }
 
@@ -311,14 +319,55 @@ function closeItemModal() {
     document.getElementById('itemModal').style.display = 'none';
 }
 
+// حساب وعرض الربح للقطعة والكرتونة
+function calculateItemProfit() {
+    // ربح القطعة
+    const costPiece = parseFloat(document.getElementById('itemCostPiece').value) || 0;
+    const pricePiece = parseFloat(document.getElementById('itemPricePiece').value) || 0;
+    const profitPiece = pricePiece - costPiece;
+    document.getElementById('profitPieceDisplay').innerText = `الربح: ${profitPiece.toFixed(2)} ج.س`;
+
+    // ربح الكرتونة
+    const costCarton = parseFloat(document.getElementById('itemCostCarton').value) || 0;
+    const priceCarton = parseFloat(document.getElementById('itemPriceCarton').value) || 0;
+    const profitCarton = priceCarton - costCarton;
+    document.getElementById('profitCartonDisplay').innerText = `الربح: ${profitCarton.toFixed(2)} ج.س`;
+}
+
+// عند تغيير سعر شراء الكرتونة أو عدد القطع، يتم تحديث سعر شراء القطعة تلقائياً (اختياري)
+document.getElementById('itemCostCarton').addEventListener('input', function() {
+    const pieces = parseInt(document.getElementById('itemPiecesPerCarton').value) || 1;
+    const costCarton = parseFloat(this.value) || 0;
+    const costPiece = costCarton / pieces;
+    document.getElementById('itemCostPiece').value = costPiece.toFixed(2);
+    calculateItemProfit();
+});
+
+document.getElementById('itemPiecesPerCarton').addEventListener('input', function() {
+    const pieces = parseInt(this.value) || 1;
+    const costCarton = parseFloat(document.getElementById('itemCostCarton').value) || 0;
+    const costPiece = costCarton / pieces;
+    document.getElementById('itemCostPiece').value = costPiece.toFixed(2);
+    calculateItemProfit();
+});
+
+// إرسال النموذج
 document.getElementById('itemForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const id = document.getElementById('itemId').value;
+    const pieces = parseInt(document.getElementById('itemPiecesPerCarton').value) || 1;
+    const costPiece = parseFloat(document.getElementById('itemCostPiece').value) || 0;
+    const pricePiece = parseFloat(document.getElementById('itemPricePiece').value) || 0;
+    const costCarton = parseFloat(document.getElementById('itemCostCarton').value) || 0;
+    const priceCarton = parseFloat(document.getElementById('itemPriceCarton').value) || 0;
     const item = {
         name: document.getElementById('itemName').value,
+        pieces_per_carton: pieces,
+        cost_piece: costPiece,
+        price_piece: pricePiece,
+        cost_carton: costCarton,
+        price_carton: priceCarton,
         quantity: parseInt(document.getElementById('itemQuantity').value) || 0,
-        price: parseFloat(document.getElementById('itemPrice').value) || 0,
-        cost: parseFloat(document.getElementById('itemCost').value) || 0,
         min_stock: parseInt(document.getElementById('itemMinStock').value) || 0
     };
     try {
@@ -362,7 +411,7 @@ async function deleteItem(id) {
     }
 }
 
-// ==================== المبيعات (مبسطة) ====================
+// ==================== المبيعات (مع دعم القطعة والكرتونة) ====================
 function addSellItem() {
     const container = document.getElementById('sellItems');
     const index = sellItems.length;
@@ -371,36 +420,60 @@ function addSellItem() {
     div.innerHTML = `
         <select onchange="updateSellItem(${index})" id="sell-item-${index}">
             <option value="">اختر صنف...</option>
-            ${items.map(i => `<option value="${i.id}" data-price="${i.price}">${i.name} (${i.price} ج.س)</option>`).join('')}
+            ${items.map(i => {
+                const pricePiece = i.price_piece || 0;
+                const priceCarton = i.price_carton || 0;
+                return `<option value="${i.id}" data-price-piece="${pricePiece}" data-price-carton="${priceCarton}" data-cost-piece="${i.cost_piece}" data-pieces="${i.pieces_per_carton || 1}">${i.name} (قطعة: ${pricePiece} | كرتونة: ${priceCarton})</option>`;
+            }).join('')}
+        </select>
+        <select onchange="updateSellItem(${index})" id="sell-unit-${index}">
+            <option value="piece">قطعة</option>
+            <option value="carton">كرتونة</option>
         </select>
         <input type="number" placeholder="الكمية" onchange="updateSellItem(${index})" id="sell-qty-${index}" min="1">
         <span>الإجمالي: <span id="sell-total-${index}">0</span></span>
+        <span>الربح: <span id="sell-profit-${index}">0</span></span>
         <button onclick="removeSellItem(${index})"><i class="fas fa-times"></i></button>
     `;
     container.appendChild(div);
-    sellItems.push({ index, id: null, qty: 0, price: 0, total: 0 });
+    sellItems.push({ index, id: null, unit: 'piece', qty: 0, price: 0, total: 0, profit: 0, piecesPerCarton: 1 });
 }
 
 function updateSellItem(index) {
     const select = document.getElementById(`sell-item-${index}`);
+    const unitSelect = document.getElementById(`sell-unit-${index}`);
     const qtyInput = document.getElementById(`sell-qty-${index}`);
     const totalSpan = document.getElementById(`sell-total-${index}`);
+    const profitSpan = document.getElementById(`sell-profit-${index}`);
 
     const option = select.options[select.selectedIndex];
     if (!option.value) {
         totalSpan.innerText = 0;
-        sellItems[index] = { index, id: null, qty: 0, price: 0, total: 0 };
+        profitSpan.innerText = 0;
+        sellItems[index] = { index, id: null, unit: 'piece', qty: 0, price: 0, total: 0, profit: 0, piecesPerCarton: 1 };
         calculateSellTotal();
         return;
     }
 
     const id = parseInt(option.value);
+    const unit = unitSelect.value;
     const qty = parseInt(qtyInput.value) || 0;
-    const price = parseFloat(option.dataset.price);
+    const price = unit === 'piece' ? parseFloat(option.dataset.pricePiece) : parseFloat(option.dataset.priceCarton);
+    const costPiece = parseFloat(option.dataset.costPiece) || 0;
+    const piecesPerCarton = parseInt(option.dataset.pieces) || 1;
     const total = price * qty;
 
+    // حساب الربح بناءً على تكلفة القطعة
+    let profit = 0;
+    if (unit === 'piece') {
+        profit = (price - costPiece) * qty;
+    } else {
+        profit = (price - (costPiece * piecesPerCarton)) * qty;
+    }
+
     totalSpan.innerText = total;
-    sellItems[index] = { index, id, qty, price, total };
+    profitSpan.innerText = profit.toFixed(2);
+    sellItems[index] = { index, id, unit, qty, price, total, profit, piecesPerCarton };
     calculateSellTotal();
 }
 
@@ -416,9 +489,12 @@ function removeSellItem(index) {
     document.querySelectorAll('.sell-item').forEach((div, i) => {
         div.querySelector('select').id = `sell-item-${i}`;
         div.querySelector('select').setAttribute('onchange', `updateSellItem(${i})`);
+        div.querySelector('select:nth-of-type(2)').id = `sell-unit-${i}`;
+        div.querySelector('select:nth-of-type(2)').setAttribute('onchange', `updateSellItem(${i})`);
         div.querySelector('input').id = `sell-qty-${i}`;
         div.querySelector('input').setAttribute('onchange', `updateSellItem(${i})`);
-        div.querySelector('span span').id = `sell-total-${i}`;
+        div.querySelectorAll('span')[0].innerHTML = `الإجمالي: <span id="sell-total-${i}">0</span>`;
+        div.querySelectorAll('span')[1].innerHTML = `الربح: <span id="sell-profit-${i}">0</span>`;
     });
     calculateSellTotal();
 }
@@ -435,22 +511,21 @@ async function submitSell() {
     const saleItems = [];
 
     for (const item of itemsToSell) {
-        const dbItem = items.find(i => i.id === item.id);
-        if (!dbItem) continue;
-
-        const itemProfit = (item.price - dbItem.cost) * item.qty;
         totalAmount += item.total;
-        totalProfit += itemProfit;
+        totalProfit += item.profit;
         saleItems.push({
             id: item.id,
+            unit: item.unit,
             qty: item.qty,
             price: item.price,
-            total: item.total
+            total: item.total,
+            profit: item.profit,
+            piecesPerCarton: item.piecesPerCarton
         });
     }
 
     const paymentMethod = document.getElementById('paymentMethod').value;
-    const confirmMsg = `المبلغ الإجمالي: ${totalAmount} ج.س\nالربح المتوقع: ${totalProfit} ج.س\nهل تريد تأكيد البيع؟`;
+    const confirmMsg = `المبلغ الإجمالي: ${totalAmount} ج.س\nالربح المتوقع: ${totalProfit.toFixed(2)} ج.س\nهل تريد تأكيد البيع؟`;
     if (!confirm(confirmMsg)) return;
 
     try {
@@ -479,7 +554,7 @@ async function submitSell() {
     }
 }
 
-// ==================== المشتريات (مبسطة) ====================
+// ==================== المشتريات (مع دعم القطعة والكرتونة) ====================
 function addBuyItem() {
     const container = document.getElementById('buyItems');
     const index = buyItems.length;
@@ -488,36 +563,47 @@ function addBuyItem() {
     div.innerHTML = `
         <select onchange="updateBuyItem(${index})" id="buy-item-${index}">
             <option value="">اختر صنف...</option>
-            ${items.map(i => `<option value="${i.id}" data-cost="${i.cost}">${i.name} (${i.cost} ج.س)</option>`).join('')}
+            ${items.map(i => {
+                const costPiece = i.cost_piece || 0;
+                const costCarton = i.cost_carton || 0;
+                return `<option value="${i.id}" data-cost-piece="${costPiece}" data-cost-carton="${costCarton}" data-pieces="${i.pieces_per_carton || 1}">${i.name} (قطعة: ${costPiece} | كرتونة: ${costCarton})</option>`;
+            }).join('')}
+        </select>
+        <select onchange="updateBuyItem(${index})" id="buy-unit-${index}">
+            <option value="piece">قطعة</option>
+            <option value="carton">كرتونة</option>
         </select>
         <input type="number" placeholder="الكمية" onchange="updateBuyItem(${index})" id="buy-qty-${index}" min="1">
         <span>الإجمالي: <span id="buy-total-${index}">0</span></span>
         <button onclick="removeBuyItem(${index})"><i class="fas fa-times"></i></button>
     `;
     container.appendChild(div);
-    buyItems.push({ index, id: null, qty: 0, price: 0, total: 0 });
+    buyItems.push({ index, id: null, unit: 'piece', qty: 0, price: 0, total: 0, piecesPerCarton: 1 });
 }
 
 function updateBuyItem(index) {
     const select = document.getElementById(`buy-item-${index}`);
+    const unitSelect = document.getElementById(`buy-unit-${index}`);
     const qtyInput = document.getElementById(`buy-qty-${index}`);
     const totalSpan = document.getElementById(`buy-total-${index}`);
 
     const option = select.options[select.selectedIndex];
     if (!option.value) {
         totalSpan.innerText = 0;
-        buyItems[index] = { index, id: null, qty: 0, price: 0, total: 0 };
+        buyItems[index] = { index, id: null, unit: 'piece', qty: 0, price: 0, total: 0, piecesPerCarton: 1 };
         calculateBuyTotal();
         return;
     }
 
     const id = parseInt(option.value);
+    const unit = unitSelect.value;
     const qty = parseInt(qtyInput.value) || 0;
-    const price = parseFloat(option.dataset.cost);
+    const price = unit === 'piece' ? parseFloat(option.dataset.costPiece) : parseFloat(option.dataset.costCarton);
+    const piecesPerCarton = parseInt(option.dataset.pieces) || 1;
     const total = price * qty;
 
     totalSpan.innerText = total;
-    buyItems[index] = { index, id, qty, price, total };
+    buyItems[index] = { index, id, unit, qty, price, total, piecesPerCarton };
     calculateBuyTotal();
 }
 
@@ -533,6 +619,8 @@ function removeBuyItem(index) {
     document.querySelectorAll('.buy-item').forEach((div, i) => {
         div.querySelector('select').id = `buy-item-${i}`;
         div.querySelector('select').setAttribute('onchange', `updateBuyItem(${i})`);
+        div.querySelector('select:nth-of-type(2)').id = `buy-unit-${i}`;
+        div.querySelector('select:nth-of-type(2)').setAttribute('onchange', `updateBuyItem(${i})`);
         div.querySelector('input').id = `buy-qty-${i}`;
         div.querySelector('input').setAttribute('onchange', `updateBuyItem(${i})`);
         div.querySelector('span span').id = `buy-total-${i}`;
@@ -554,9 +642,11 @@ async function submitBuy() {
         totalAmount += item.total;
         purchaseItems.push({
             id: item.id,
+            unit: item.unit,
             qty: item.qty,
             price: item.price,
-            total: item.total
+            total: item.total,
+            piecesPerCarton: item.piecesPerCarton
         });
     }
 
