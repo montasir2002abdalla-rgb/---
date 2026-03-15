@@ -1,343 +1,401 @@
 const express = require('express');
-const sqlite3 = require('sqlite3').verbose();
-const bodyParser = require('body-parser');
-const path = require('path');
+const { Pool } = require('pg');
+const bcrypt = require('bcrypt');
 const cors = require('cors');
+const path = require('path');
+require('dotenv').config();
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 app.use(cors());
-app.use(bodyParser.json());
+app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-const db = new sqlite3.Database('./database.sqlite', (err) => {
-    if (err) console.error(err.message);
-    else {
-        console.log('✅ متصل بقاعدة البيانات');
-        initDatabase();
-    }
+// اتصال PostgreSQL
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
 });
 
-function initDatabase() {
-    db.serialize(() => {
-        // جدول الأصناف
-        db.run(`CREATE TABLE IF NOT EXISTS items (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            quantity INTEGER DEFAULT 0,
-            price REAL NOT NULL,
-            cost REAL,
-            minStock INTEGER DEFAULT 0
-        )`);
+pool.connect((err) => {
+  if (err) {
+    console.error('❌ فشل الاتصال بقاعدة البيانات', err);
+  } else {
+    console.log('✅ متصل بقاعدة البيانات PostgreSQL');
+    initDatabase();
+  }
+});
 
-        // جدول المبيعات
-        db.run(`CREATE TABLE IF NOT EXISTS sales (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            date TEXT DEFAULT CURRENT_TIMESTAMP,
-            total REAL NOT NULL,
-            paymentMethod TEXT DEFAULT 'cash',
-            items TEXT,
-            profit REAL
-        )`);
+// إنشاء الجداول
+async function initDatabase() {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        username VARCHAR(100) UNIQUE NOT NULL,
+        password_hash VARCHAR(255) NOT NULL
+      );
+    `);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS items (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(200) NOT NULL,
+        quantity INTEGER DEFAULT 0,
+        price DECIMAL(10,2) DEFAULT 0,
+        cost DECIMAL(10,2) DEFAULT 0,
+        min_stock INTEGER DEFAULT 0
+      );
+    `);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS sales (
+        id SERIAL PRIMARY KEY,
+        date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        total DECIMAL(10,2) DEFAULT 0,
+        payment_method VARCHAR(50)
+      );
+    `);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS sale_items (
+        id SERIAL PRIMARY KEY,
+        sale_id INTEGER REFERENCES sales(id) ON DELETE CASCADE,
+        item_id INTEGER REFERENCES items(id) ON DELETE CASCADE,
+        quantity INTEGER,
+        price DECIMAL(10,2),
+        total DECIMAL(10,2)
+      );
+    `);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS purchases (
+        id SERIAL PRIMARY KEY,
+        date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        total DECIMAL(10,2) DEFAULT 0
+      );
+    `);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS purchase_items (
+        id SERIAL PRIMARY KEY,
+        purchase_id INTEGER REFERENCES purchases(id) ON DELETE CASCADE,
+        item_id INTEGER REFERENCES items(id) ON DELETE CASCADE,
+        quantity INTEGER,
+        price DECIMAL(10,2),
+        total DECIMAL(10,2)
+      );
+    `);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS shipments (
+        id SERIAL PRIMARY KEY,
+        date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        person_name VARCHAR(200),
+        region VARCHAR(200),
+        item_description TEXT,
+        item_price DECIMAL(10,2) DEFAULT 0,
+        my_fee DECIMAL(10,2) DEFAULT 0,
+        total DECIMAL(10,2) GENERATED ALWAYS AS (item_price + my_fee) STORED,
+        status VARCHAR(50) DEFAULT 'pending'
+      );
+    `);
 
-        // جدول المشتريات
-        db.run(`CREATE TABLE IF NOT EXISTS purchases (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            date TEXT DEFAULT CURRENT_TIMESTAMP,
-            total REAL NOT NULL,
-            items TEXT
-        )`);
-
-        // جدول الإرساليات
-        db.run(`CREATE TABLE IF NOT EXISTS shipments (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            date TEXT DEFAULT CURRENT_TIMESTAMP,
-            personName TEXT NOT NULL,
-            region TEXT NOT NULL,
-            itemDescription TEXT NOT NULL,
-            itemPrice REAL DEFAULT 0,
-            myFee REAL DEFAULT 0,
-            total REAL DEFAULT 0,
-            status TEXT DEFAULT 'pending'
-        )`);
-
-        // جدول المستخدم
-        db.run(`CREATE TABLE IF NOT EXISTS user (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE NOT NULL,
-            password TEXT NOT NULL
-        )`);
-
-        // إدراج المستخدم الافتراضي إذا لم يكن موجوداً
-        db.get('SELECT * FROM user WHERE username = ?', ['عاصم عبدالله ود كمون'], (err, row) => {
-            if (!row) {
-                db.run('INSERT INTO user (username, password) VALUES (?, ?)', ['عاصم عبدالله ود كمون', '123456']);
-                console.log('👤 تم إنشاء المستخدم الافتراضي');
-            }
-        });
-    });
+    // مستخدم افتراضي
+    const userCheck = await pool.query('SELECT * FROM users WHERE username = $1', ['عاصم عبدالله ود كمون']);
+    if (userCheck.rows.length === 0) {
+      const hashedPassword = await bcrypt.hash('admin123', 10);
+      await pool.query('INSERT INTO users (username, password_hash) VALUES ($1, $2)', ['عاصم عبدالله ود كمون', hashedPassword]);
+      console.log('✅ تم إنشاء المستخدم الافتراضي');
+    }
+  } catch (err) {
+    console.error('❌ خطأ في إنشاء الجداول', err);
+  }
 }
 
-// -------------------- API Endpoints --------------------
-
-// الأصناف
-app.get('/api/items', (req, res) => {
-    db.all('SELECT * FROM items', [], (err, rows) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(rows);
-    });
-});
-
-app.post('/api/items', (req, res) => {
-    const { name, quantity, price, cost, minStock } = req.body;
-    db.run(`INSERT INTO items (name, quantity, price, cost, minStock) VALUES (?, ?, ?, ?, ?)`,
-        [name, quantity, price, cost || 0, minStock || 0],
-        function(err) {
-            if (err) return res.status(500).json({ error: err.message });
-            res.json({ id: this.lastID, message: 'تمت الإضافة' });
-        }
-    );
-});
-
-app.put('/api/items/:id', (req, res) => {
-    const { name, quantity, price, cost, minStock } = req.body;
-    db.run(`UPDATE items SET name=?, quantity=?, price=?, cost=?, minStock=? WHERE id=?`,
-        [name, quantity, price, cost, minStock, req.params.id],
-        function(err) {
-            if (err) return res.status(500).json({ error: err.message });
-            res.json({ message: 'تم التحديث' });
-        }
-    );
-});
-
-app.delete('/api/items/:id', (req, res) => {
-    db.run('DELETE FROM items WHERE id = ?', req.params.id, function(err) {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json({ message: 'تم الحذف' });
-    });
-});
-
-// المبيعات
-app.post('/api/sales', (req, res) => {
-    const { items, total, paymentMethod } = req.body;
-    let profit = 0;
-    const promises = items.map(item => {
-        return new Promise((resolve, reject) => {
-            db.get('SELECT cost FROM items WHERE id = ?', [item.id], (err, row) => {
-                if (err) reject(err);
-                else {
-                    const cost = row?.cost || 0;
-                    profit += (item.price - cost) * item.quantity;
-                    resolve();
-                }
-            });
-        });
-    });
-
-    Promise.all(promises).then(() => {
-        db.serialize(() => {
-            db.run('BEGIN TRANSACTION');
-            db.run(`INSERT INTO sales (total, paymentMethod, items, profit) VALUES (?, ?, ?, ?)`,
-                [total, paymentMethod, JSON.stringify(items), profit],
-                function(err) {
-                    if (err) {
-                        db.run('ROLLBACK');
-                        return res.status(500).json({ error: err.message });
-                    }
-                    items.forEach(item => {
-                        db.run(`UPDATE items SET quantity = quantity - ? WHERE id = ?`,
-                            [item.quantity, item.id],
-                            (err) => {
-                                if (err) {
-                                    db.run('ROLLBACK');
-                                    return res.status(500).json({ error: err.message });
-                                }
-                            }
-                        );
-                    });
-                    db.run('COMMIT');
-                    res.json({ id: this.lastID, message: 'تم تسجيل البيع' });
-                }
-            );
-        });
-    }).catch(err => res.status(500).json({ error: err.message }));
-});
-
-// المشتريات
-app.post('/api/purchases', (req, res) => {
-    const { items, total } = req.body;
-    db.serialize(() => {
-        db.run('BEGIN TRANSACTION');
-        db.run(`INSERT INTO purchases (total, items) VALUES (?, ?)`,
-            [total, JSON.stringify(items)],
-            function(err) {
-                if (err) {
-                    db.run('ROLLBACK');
-                    return res.status(500).json({ error: err.message });
-                }
-                items.forEach(item => {
-                    db.run(`UPDATE items SET quantity = quantity + ? WHERE id = ?`,
-                        [item.quantity, item.id],
-                        (err) => {
-                            if (err) {
-                                db.run('ROLLBACK');
-                                return res.status(500).json({ error: err.message });
-                            }
-                        }
-                    );
-                });
-                db.run('COMMIT');
-                res.json({ id: this.lastID, message: 'تم تسجيل الشراء' });
-            }
-        );
-    });
-});
-
-// التقارير المالية
-app.get('/api/financial-summary', (req, res) => {
-    const today = new Date().toISOString().split('T')[0];
-    const month = today.slice(0, 7);
-
-    db.get(`
-        SELECT 
-            (SELECT COALESCE(SUM(total), 0) FROM sales) as totalSales,
-            (SELECT COALESCE(SUM(profit), 0) FROM sales) as totalProfit,
-            (SELECT COALESCE(SUM(total), 0) FROM purchases) as totalPurchases,
-            (SELECT COALESCE(SUM(total), 0) FROM sales WHERE date LIKE ?) as todaySales,
-            (SELECT COALESCE(SUM(profit), 0) FROM sales WHERE date LIKE ?) as todayProfit,
-            (SELECT COALESCE(SUM(total), 0) FROM sales WHERE date LIKE ?) as monthSales,
-            (SELECT COALESCE(SUM(profit), 0) FROM sales WHERE date LIKE ?) as monthProfit,
-            (SELECT COALESCE(SUM(total), 0) FROM purchases WHERE date LIKE ?) as todayPurchases
-    `, [`${today}%`, `${today}%`, `${month}%`, `${month}%`, `${today}%`], (err, row) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(row);
-    });
-});
-
-// المبيعات الشهرية للرسم البياني
-app.get('/api/sales/monthly', (req, res) => {
-    const months = [];
-    const now = new Date();
-    for (let i = 5; i >= 0; i--) {
-        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-        const year = d.getFullYear();
-        const month = String(d.getMonth() + 1).padStart(2, '0');
-        months.push(`${year}-${month}`);
-    }
-
-    const placeholders = months.map(() => '?').join(',');
-    const query = `
-        SELECT strftime('%Y-%m', date) as month, SUM(total) as total
-        FROM sales
-        WHERE strftime('%Y-%m', date) IN (${placeholders})
-        GROUP BY month
-        ORDER BY month
-    `;
-
-    db.all(query, months, (err, rows) => {
-        if (err) return res.status(500).json({ error: err.message });
-        const result = months.map(m => {
-            const found = rows.find(r => r.month === m);
-            return found ? found.total : 0;
-        });
-        res.json({
-            months: months.map(m => {
-                const [y, mo] = m.split('-');
-                return `${mo}/${y}`;
-            }),
-            data: result
-        });
-    });
-});
-
-// جميع المبيعات (للتفاصيل)
-app.get('/api/sales/all', (req, res) => {
-    db.all('SELECT * FROM sales ORDER BY date DESC', [], (err, rows) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(rows);
-    });
-});
-
-// جميع المشتريات (للتفاصيل)
-app.get('/api/purchases/all', (req, res) => {
-    db.all('SELECT * FROM purchases ORDER BY date DESC', [], (err, rows) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(rows);
-    });
-});
-
-// الإرساليات
-app.get('/api/shipments', (req, res) => {
-    db.all('SELECT * FROM shipments ORDER BY date DESC', [], (err, rows) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(rows);
-    });
-});
-
-app.post('/api/shipments', (req, res) => {
-    const { personName, region, itemDescription, itemPrice, myFee, status } = req.body;
-    const total = (parseFloat(itemPrice) || 0) + (parseFloat(myFee) || 0);
-    db.run(`INSERT INTO shipments (personName, region, itemDescription, itemPrice, myFee, total, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [personName, region, itemDescription, itemPrice || 0, myFee || 0, total, status || 'pending'],
-        function(err) {
-            if (err) return res.status(500).json({ error: err.message });
-            res.json({ id: this.lastID, message: 'تمت إضافة الإرسالية' });
-        }
-    );
-});
-
-app.put('/api/shipments/:id', (req, res) => {
-    const { personName, region, itemDescription, itemPrice, myFee, status } = req.body;
-    const total = (parseFloat(itemPrice) || 0) + (parseFloat(myFee) || 0);
-    db.run(`UPDATE shipments SET personName=?, region=?, itemDescription=?, itemPrice=?, myFee=?, total=?, status=? WHERE id=?`,
-        [personName, region, itemDescription, itemPrice, myFee, total, status, req.params.id],
-        function(err) {
-            if (err) return res.status(500).json({ error: err.message });
-            res.json({ message: 'تم التحديث' });
-        }
-    );
-});
-
-app.delete('/api/shipments/:id', (req, res) => {
-    db.run('DELETE FROM shipments WHERE id = ?', req.params.id, function(err) {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json({ message: 'تم الحذف' });
-    });
-});
+// ==================== مسارات API ====================
 
 // تسجيل الدخول
-app.post('/api/login', (req, res) => {
-    const { username, password } = req.body;
-    db.get('SELECT * FROM user WHERE username = ? AND password = ?', [username, password], (err, row) => {
-        if (err) return res.status(500).json({ error: err.message });
-        if (row) {
-            res.json({ success: true, message: 'تم تسجيل الدخول' });
-        } else {
-            res.status(401).json({ success: false, error: 'اسم المستخدم أو كلمة المرور غير صحيحة' });
-        }
-    });
+app.post('/api/login', async (req, res) => {
+  const { username, password } = req.body;
+  try {
+    const result = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
+    if (result.rows.length === 0) {
+      return res.status(401).json({ error: 'اسم المستخدم غير صحيح' });
+    }
+    const user = result.rows[0];
+    const valid = await bcrypt.compare(password, user.password_hash);
+    if (!valid) {
+      return res.status(401).json({ error: 'كلمة المرور غير صحيحة' });
+    }
+    res.json({ token: 'logged-in' });
+  } catch (err) {
+    res.status(500).json({ error: 'خطأ في الخادم' });
+  }
 });
 
 // تغيير كلمة المرور
-app.post('/api/change-password', (req, res) => {
-    const { oldPassword, newPassword } = req.body;
-    db.get('SELECT * FROM user WHERE username = ?', ['عاصم عبدالله ود كمون'], (err, user) => {
-        if (err) return res.status(500).json({ error: err.message });
-        if (!user) return res.status(404).json({ error: 'المستخدم غير موجود' });
-
-        if (user.password !== oldPassword) {
-            return res.status(401).json({ error: 'كلمة المرور القديمة غير صحيحة' });
-        }
-
-        db.run('UPDATE user SET password = ? WHERE username = ?', [newPassword, 'عاصم عبدالله ود كمون'], function(err) {
-            if (err) return res.status(500).json({ error: err.message });
-            res.json({ message: 'تم تغيير كلمة المرور بنجاح' });
-        });
-    });
+app.post('/api/change-password', async (req, res) => {
+  const { oldPassword, newPassword } = req.body;
+  const username = 'عاصم عبدالله ود كمون';
+  try {
+    const result = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
+    if (result.rows.length === 0) return res.status(404).json({ error: 'المستخدم غير موجود' });
+    const user = result.rows[0];
+    const valid = await bcrypt.compare(oldPassword, user.password_hash);
+    if (!valid) return res.status(401).json({ error: 'كلمة المرور القديمة غير صحيحة' });
+    const newHash = await bcrypt.hash(newPassword, 10);
+    await pool.query('UPDATE users SET password_hash = $1 WHERE username = $2', [newHash, username]);
+    res.json({ message: 'تم التغيير بنجاح' });
+  } catch (err) {
+    res.status(500).json({ error: 'خطأ في الخادم' });
+  }
 });
 
+// ==================== الأصناف ====================
+app.get('/api/items', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM items ORDER BY id');
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/items', async (req, res) => {
+  const { name, quantity, price, cost, minStock } = req.body;
+  try {
+    const result = await pool.query(
+      'INSERT INTO items (name, quantity, price, cost, min_stock) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+      [name, quantity, price, cost, minStock || 0]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/items/:id', async (req, res) => {
+  const { id } = req.params;
+  const { name, quantity, price, cost, minStock } = req.body;
+  try {
+    await pool.query(
+      'UPDATE items SET name = $1, quantity = $2, price = $3, cost = $4, min_stock = $5 WHERE id = $6',
+      [name, quantity, price, cost, minStock || 0, id]
+    );
+    res.json({ message: 'تم التحديث' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/items/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pool.query('DELETE FROM items WHERE id = $1', [id]);
+    res.json({ message: 'تم الحذف' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ==================== المبيعات ====================
+app.get('/api/sales/all', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT s.*, 
+        (SELECT SUM((si.price - i.cost) * si.quantity) 
+         FROM sale_items si 
+         JOIN items i ON si.item_id = i.id 
+         WHERE si.sale_id = s.id) as profit
+      FROM sales s
+      ORDER BY s.date DESC
+    `);
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/sales', async (req, res) => {
+  const { items: saleItems, total, paymentMethod } = req.body;
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const saleResult = await client.query(
+      'INSERT INTO sales (total, payment_method) VALUES ($1, $2) RETURNING id',
+      [total, paymentMethod]
+    );
+    const saleId = saleResult.rows[0].id;
+
+    for (const item of saleItems) {
+      await client.query(
+        'INSERT INTO sale_items (sale_id, item_id, quantity, price, total) VALUES ($1, $2, $3, $4, $5)',
+        [saleId, item.id, item.qty, item.price, item.total]
+      );
+      await client.query('UPDATE items SET quantity = quantity - $1 WHERE id = $2', [item.qty, item.id]);
+    }
+    await client.query('COMMIT');
+    res.status(201).json({ message: 'تم تسجيل البيع' });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    res.status(500).json({ error: err.message });
+  } finally {
+    client.release();
+  }
+});
+
+// ==================== المشتريات ====================
+app.get('/api/purchases/all', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM purchases ORDER BY date DESC');
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/purchases', async (req, res) => {
+  const { items: purchaseItems, total } = req.body;
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const purchaseResult = await client.query(
+      'INSERT INTO purchases (total) VALUES ($1) RETURNING id',
+      [total]
+    );
+    const purchaseId = purchaseResult.rows[0].id;
+
+    for (const item of purchaseItems) {
+      await client.query(
+        'INSERT INTO purchase_items (purchase_id, item_id, quantity, price, total) VALUES ($1, $2, $3, $4, $5)',
+        [purchaseId, item.id, item.qty, item.price, item.total]
+      );
+      await client.query(
+        'UPDATE items SET quantity = quantity + $1 WHERE id = $2',
+        [item.qty, item.id]
+      );
+    }
+    await client.query('COMMIT');
+    res.status(201).json({ message: 'تم تسجيل الشراء' });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    res.status(500).json({ error: err.message });
+  } finally {
+    client.release();
+  }
+});
+
+// ==================== الإرساليات ====================
+app.get('/api/shipments', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM shipments ORDER BY date DESC');
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/shipments', async (req, res) => {
+  const { personName, region, itemDescription, itemPrice, myFee, status } = req.body;
+  try {
+    const result = await pool.query(
+      'INSERT INTO shipments (person_name, region, item_description, item_price, my_fee, status) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+      [personName, region, itemDescription, itemPrice, myFee, status || 'pending']
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/shipments/:id', async (req, res) => {
+  const { id } = req.params;
+  const { personName, region, itemDescription, itemPrice, myFee, status } = req.body;
+  try {
+    await pool.query(
+      'UPDATE shipments SET person_name = $1, region = $2, item_description = $3, item_price = $4, my_fee = $5, status = $6 WHERE id = $7',
+      [personName, region, itemDescription, itemPrice, myFee, status, id]
+    );
+    res.json({ message: 'تم التحديث' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/shipments/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pool.query('DELETE FROM shipments WHERE id = $1', [id]);
+    res.json({ message: 'تم الحذف' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ==================== التقارير المالية ====================
+app.get('/api/financial-summary', async (req, res) => {
+  try {
+    // إجمالي المبيعات
+    const salesTotal = await pool.query('SELECT COALESCE(SUM(total),0) as total FROM sales');
+    // إجمالي المشتريات
+    const purchasesTotal = await pool.query('SELECT COALESCE(SUM(total),0) as total FROM purchases');
+    // إجمالي الأرباح (مجموع أرباح المبيعات)
+    const profitResult = await pool.query(`
+      SELECT COALESCE(SUM((sale_items.price - i.cost) * sale_items.quantity),0) as profit
+      FROM sale_items
+      JOIN items i ON sale_items.item_id = i.id
+    `);
+    // مبيعات اليوم
+    const today = new Date().toISOString().split('T')[0];
+    const todaySales = await pool.query('SELECT COALESCE(SUM(total),0) as total FROM sales WHERE date::date = $1', [today]);
+    // مبيعات الشهر
+    const firstDay = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
+    const monthSales = await pool.query('SELECT COALESCE(SUM(total),0) as total FROM sales WHERE date >= $1', [firstDay]);
+    // أرباح اليوم والشهر
+    const todayProfit = await pool.query(`
+      SELECT COALESCE(SUM((sale_items.price - i.cost) * sale_items.quantity),0) as profit
+      FROM sale_items
+      JOIN items i ON sale_items.item_id = i.id
+      JOIN sales s ON sale_items.sale_id = s.id
+      WHERE s.date::date = $1
+    `, [today]);
+    const monthProfit = await pool.query(`
+      SELECT COALESCE(SUM((sale_items.price - i.cost) * sale_items.quantity),0) as profit
+      FROM sale_items
+      JOIN items i ON sale_items.item_id = i.id
+      JOIN sales s ON sale_items.sale_id = s.id
+      WHERE s.date >= $1
+    `, [firstDay]);
+
+    res.json({
+      totalSales: salesTotal.rows[0].total,
+      totalPurchases: purchasesTotal.rows[0].total,
+      totalProfit: profitResult.rows[0].profit,
+      todaySales: todaySales.rows[0].total,
+      monthSales: monthSales.rows[0].total,
+      todayProfit: todayProfit.rows[0].profit,
+      monthProfit: monthProfit.rows[0].profit
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// مبيعات شهرية (للرسم البياني)
+app.get('/api/sales/monthly', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT TO_CHAR(date, 'YYYY-MM') as month, SUM(total) as total
+      FROM sales
+      GROUP BY month
+      ORDER BY month DESC
+      LIMIT 12
+    `);
+    const months = result.rows.map(r => r.month).reverse();
+    const data = result.rows.map(r => r.total).reverse();
+    res.json({ months, data });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// بدء الخادم
 app.listen(PORT, () => {
-    console.log(`🚀 الخادم يعمل على http://localhost:${PORT}`);
+  console.log(`🚀 الخادم يعمل على المنفذ ${PORT}`);
 });
