@@ -1039,3 +1039,979 @@ input:focus, select:focus {
     color: #27ae60 !important;
     font-weight: bold;
 }
+/* ===== Reset وتنسيقات أساسية ===== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif;
+}
+
+body {
+    background-color: #f4f7fc;
+    direction: rtl;
+    color: #2c3e50;
+}
+
+/* ===== شاشة تسجيل الدخول ===== */
+.login-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background: linear-gradient(145deg, #0f4c75, #3282b8, #bbe1fa);
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+}
+
+.login-container::before {
+    content: '';
+    position: absolute;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 60%);
+    animation: rotate 40s linear infinite;
+    top: -50%;
+    left: -50%;
+    z-index: 0;
+}
+
+@keyframes rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.login-box {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    padding: 45px 35px;
+    border-radius: 28px;
+    box-shadow: 0 30px 60px rgba(0, 40, 80, 0.4);
+    width: 100%;
+    max-width: 420px;
+    text-align: center;
+    animation: fadeInUp 0.6s ease;
+    position: relative;
+    z-index: 1;
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.login-logo i {
+    font-size: 5rem;
+    color: #1b4d6e;
+    margin-bottom: 15px;
+    filter: drop-shadow(0 10px 15px rgba(0, 100, 150, 0.5));
+}
+
+.login-logo h1 {
+    font-size: 2.3rem;
+    background: linear-gradient(145deg, #0a2f44, #1b4d6e);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+    font-weight: 800;
+}
+
+.login-logo p {
+    color: #3a6b8f;
+    margin-bottom: 30px;
+    font-weight: 500;
+}
+
+#loginForm input {
+    border: 2px solid #cfdfed;
+    border-radius: 50px;
+    padding: 15px 22px;
+    font-size: 1rem;
+    transition: all 0.3s;
+    background: #f9fcff;
+}
+
+#loginForm input:focus {
+    border-color: #1b4d6e;
+    box-shadow: 0 0 0 4px rgba(27, 77, 110, 0.15);
+}
+
+#loginForm input[readonly] {
+    background-color: #e4eff8;
+    color: #0f4c75;
+    font-weight: 600;
+    cursor: not-allowed;
+}
+
+#loginForm button {
+    background: linear-gradient(145deg, #0f4c75, #1b5a8a);
+    border: none;
+    border-radius: 50px;
+    padding: 15px;
+    font-size: 1.2rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    box-shadow: 0 8px 20px rgba(15, 76, 117, 0.5);
+    transition: all 0.3s;
+    color: white;
+}
+
+#loginForm button:hover {
+    background: linear-gradient(145deg, #1b5a8a, #236fa3);
+    transform: translateY(-3px);
+    box-shadow: 0 15px 30px rgba(15, 76, 117, 0.7);
+}
+
+.login-footer {
+    margin-top: 25px;
+    color: #2b6c8f;
+    font-size: 0.95rem;
+    border-top: 1px solid #c7ddef;
+    padding-top: 18px;
+}
+
+/* ===== شريط التنبيهات ===== */
+.notification-bar {
+    position: fixed;
+    top: 80px;
+    left: 20px;
+    right: 20px;
+    background: #e74c3c;
+    color: white;
+    padding: 16px 25px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 1000;
+    animation: slideDown 0.4s ease;
+    border-radius: 60px;
+    box-shadow: 0 10px 25px rgba(231, 76, 60, 0.4);
+    max-width: 600px;
+    margin: 0 auto;
+    font-weight: 600;
+}
+
+@keyframes slideDown {
+    from { transform: translateY(-100%); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.notification-bar i {
+    font-size: 1.3rem;
+    margin-left: 12px;
+}
+
+.notification-bar button {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.3rem;
+    cursor: pointer;
+    opacity: 0.8;
+    transition: 0.3s;
+}
+
+.notification-bar button:hover {
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+/* ===== الهيدر العلوي ===== */
+.app-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 75px;
+    background: white;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 25px;
+    z-index: 99;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.header-title {
+    font-size: 1.7rem;
+    font-weight: 700;
+    color: #1b4d6e;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.05);
+}
+
+.toggle-sidebar-btn {
+    background: linear-gradient(145deg, #f39c12, #e67e22);
+    color: white;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 6px 18px rgba(243, 156, 18, 0.4);
+    transition: 0.3s;
+    border: none;
+    font-size: 1.3rem;
+}
+
+.toggle-sidebar-btn:hover {
+    background: linear-gradient(145deg, #e67e22, #d35400);
+    transform: rotate(90deg) scale(1.1);
+    box-shadow: 0 10px 25px rgba(243, 156, 18, 0.6);
+}
+
+.back-btn {
+    background: linear-gradient(145deg, #3498db, #2980b9);
+    color: white;
+    border: none;
+    border-radius: 40px;
+    padding: 9px 20px;
+    font-size: 1rem;
+    font-weight: 600;
+    box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+    transition: 0.3s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.back-btn:hover {
+    background: linear-gradient(145deg, #2980b9, #1f618d);
+    transform: translateX(-5px) scale(1.05);
+    box-shadow: 0 8px 20px rgba(52, 152, 219, 0.6);
+}
+
+.btn-logout {
+    background: linear-gradient(145deg, #e74c3c, #c0392b);
+    color: white;
+    border: none;
+    border-radius: 40px;
+    padding: 9px 22px;
+    font-size: 1rem;
+    font-weight: 600;
+    box-shadow: 0 5px 15px rgba(231, 76, 60, 0.4);
+    transition: 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.btn-logout:hover {
+    background: linear-gradient(145deg, #c0392b, #a93226);
+    transform: scale(1.05);
+    box-shadow: 0 8px 20px rgba(231, 76, 60, 0.6);
+}
+
+/* ===== القائمة الجانبية ===== */
+.sidebar {
+    position: fixed;
+    top: 75px;
+    right: 0;
+    width: 270px;
+    height: calc(100vh - 75px);
+    background: linear-gradient(180deg, #1e3b5a, #0f2c44);
+    color: white;
+    transition: width 0.3s ease, right 0.3s ease;
+    z-index: 98;
+    overflow-y: auto;
+    overflow-x: hidden;
+    box-shadow: 4px 0 15px rgba(0,0,0,0.15);
+}
+
+.sidebar.collapsed {
+    width: 85px;
+}
+
+.sidebar.collapsed .sidebar-header h3,
+.sidebar.collapsed .sidebar-menu li span {
+    display: none;
+}
+
+.sidebar.collapsed .sidebar-menu li {
+    justify-content: center;
+    padding: 15px 0;
+    margin: 8px;
+}
+
+.sidebar.collapsed .sidebar-menu li i {
+    font-size: 1.7rem;
+    margin: 0;
+}
+
+.sidebar-header {
+    padding: 25px 15px;
+    text-align: center;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    background: rgba(0,0,0,0.15);
+    white-space: nowrap;
+}
+
+.sidebar-header h3 {
+    font-size: 1.5rem;
+    background: linear-gradient(145deg, #f39c12, #e67e22);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: bold;
+}
+
+.sidebar-menu {
+    list-style: none;
+    padding: 20px 0;
+}
+
+.sidebar-menu li {
+    padding: 14px 25px;
+    cursor: pointer;
+    transition: 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    margin: 6px 12px;
+    border-radius: 12px;
+    position: relative;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.sidebar-menu li::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 5px;
+    height: 100%;
+    background: #f39c12;
+    transform: scaleY(0);
+    transition: transform 0.25s;
+}
+
+.sidebar-menu li:hover::before {
+    transform: scaleY(1);
+}
+
+.sidebar-menu li i {
+    width: 24px;
+    font-size: 1.3rem;
+    transition: 0.3s;
+    z-index: 1;
+}
+
+.sidebar-menu li:hover {
+    background: rgba(255,255,255,0.1);
+    transform: translateX(-5px);
+}
+
+.sidebar-menu li:hover i {
+    transform: scale(1.2);
+    color: #f39c12;
+}
+
+.sidebar-menu li.active {
+    background: #f39c12;
+    color: #0f2c44;
+    font-weight: bold;
+    box-shadow: 0 6px 15px rgba(243, 156, 18, 0.4);
+}
+
+.sidebar-menu li.active i {
+    color: #0f2c44;
+}
+
+/* ===== المحتوى الرئيسي ===== */
+.main-content {
+    margin-right: 270px;
+    margin-top: 75px;
+    padding: 30px;
+    min-height: calc(100vh - 75px);
+    background: #f4f7fc;
+    transition: margin-right 0.3s;
+}
+
+.sidebar.collapsed ~ .main-content {
+    margin-right: 85px;
+}
+
+.section {
+    display: none;
+    animation: fadeIn 0.4s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.section.active {
+    display: block;
+}
+
+.section h3 {
+    color: #1e3b5a;
+    margin-bottom: 20px;
+    font-size: 1.5rem;
+    border-right: 5px solid #f39c12;
+    padding-right: 15px;
+}
+
+/* ===== البطاقات الإحصائية ===== */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 25px;
+    margin: 25px 0;
+}
+
+.stat-card {
+    background: white;
+    padding: 25px;
+    border-radius: 20px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+    text-align: center;
+    transition: 0.3s;
+    cursor: pointer;
+    border: 1px solid #e3eaf1;
+}
+
+.stat-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 35px rgba(0,0,0,0.1);
+}
+
+.stat-card i {
+    font-size: 3rem;
+    color: #f39c12;
+    margin-bottom: 15px;
+    transition: 0.3s;
+}
+
+.stat-card:hover i {
+    transform: rotate(360deg);
+}
+
+.stat-value {
+    font-size: 2.3rem;
+    font-weight: bold;
+    color: #1e3b5a;
+}
+
+.stat-label {
+    color: #6c7f8f;
+    font-size: 1rem;
+}
+
+/* ===== الرسوم البيانية ===== */
+.chart-container {
+    background: white;
+    padding: 25px;
+    border-radius: 20px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+    margin: 25px 0;
+    height: 320px;
+}
+
+/* ===== الأزرار العامة ===== */
+.btn {
+    padding: 12px 28px;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    font-size: 1rem;
+    margin: 6px 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: 0.25s;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    font-weight: 600;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.4s, height 0.4s;
+}
+
+.btn:hover::after {
+    width: 200px;
+    height: 200px;
+}
+
+.btn i {
+    font-size: 1.2rem;
+    position: relative;
+    z-index: 1;
+    transition: 0.2s;
+}
+
+.btn:hover i {
+    transform: translateX(-3px) scale(1.1);
+}
+
+.btn-primary {
+    background: linear-gradient(145deg, #3498db, #2980b9);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(145deg, #2980b9, #1f618d);
+    box-shadow: 0 8px 20px rgba(52, 152, 219, 0.5);
+}
+
+.btn-secondary {
+    background: linear-gradient(145deg, #95a5a6, #7f8c8d);
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: linear-gradient(145deg, #7f8c8d, #6c7a7d);
+    box-shadow: 0 8px 20px rgba(127, 140, 141, 0.5);
+}
+
+.btn-success {
+    background: linear-gradient(145deg, #27ae60, #2ecc71);
+    color: white;
+}
+
+.btn-success:hover {
+    background: linear-gradient(145deg, #2ecc71, #27ae60);
+    box-shadow: 0 8px 20px rgba(46, 204, 113, 0.5);
+}
+
+.btn-danger {
+    background: linear-gradient(145deg, #e74c3c, #c0392b);
+    color: white;
+}
+
+.btn-danger:hover {
+    background: linear-gradient(145deg, #c0392b, #a93226);
+    box-shadow: 0 8px 20px rgba(231, 76, 60, 0.5);
+}
+
+.btn-warning {
+    background: linear-gradient(145deg, #f39c12, #e67e22);
+    color: white;
+}
+
+.btn-warning:hover {
+    background: linear-gradient(145deg, #e67e22, #d35400);
+    box-shadow: 0 8px 20px rgba(243, 156, 18, 0.5);
+}
+
+.btn-sm {
+    padding: 8px 18px;
+    font-size: 0.9rem;
+}
+
+/* ===== الجداول ===== */
+.table-responsive {
+    overflow-x: auto;
+    margin: 20px 0;
+    border-radius: 20px;
+    background: white;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+}
+
+table {
+    width: 100%;
+    background: white;
+    border-collapse: collapse;
+    min-width: 700px;
+}
+
+th {
+    background: #1e3b5a;
+    color: white;
+    padding: 15px 12px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    white-space: nowrap;
+}
+
+td {
+    padding: 12px;
+    border-bottom: 1px solid #e9eff4;
+    color: #2c3e50;
+}
+
+tr:hover {
+    background: #f8fbfe;
+}
+
+@media (max-width: 768px) {
+    table {
+        min-width: 100%;
+    }
+    table thead {
+        display: none;
+    }
+    table, table tbody, table tr, table td {
+        display: block;
+        width: 100%;
+    }
+    table tr {
+        margin-bottom: 15px;
+        border: 1px solid #dde4ec;
+        border-radius: 16px;
+        overflow: hidden;
+        background: white;
+    }
+    table td {
+        text-align: right;
+        padding: 12px 12px 12px 40%;
+        border-bottom: 1px solid #eef3f8;
+        position: relative;
+        white-space: normal;
+    }
+    table td:last-child {
+        border-bottom: none;
+    }
+    table td::before {
+        content: attr(data-label);
+        position: absolute;
+        right: 12px;
+        width: 35%;
+        font-weight: bold;
+        color: #1e3b5a;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+}
+
+/* ===== النماذج ===== */
+.form-group {
+    margin: 18px 0;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 6px;
+    color: #1e3b5a;
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+input, select, textarea {
+    width: 100%;
+    padding: 14px 18px;
+    border: 2px solid #d9e3ec;
+    border-radius: 16px;
+    transition: 0.25s;
+    font-size: 1rem;
+    background: white;
+}
+
+input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: #f39c12;
+    box-shadow: 0 0 0 4px rgba(243, 156, 18, 0.2);
+}
+
+/* ===== النوافذ المنبثقة ===== */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+    backdrop-filter: blur(6px);
+}
+
+.modal-content {
+    background: white;
+    padding: 35px;
+    border-radius: 28px;
+    max-width: 700px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+    animation: modalSlide 0.3s ease;
+    box-shadow: 0 40px 70px rgba(0,0,0,0.2);
+}
+
+@keyframes modalSlide {
+    from { transform: translateY(-30px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.close {
+    position: absolute;
+    top: 20px;
+    left: 25px;
+    font-size: 30px;
+    cursor: pointer;
+    color: #a0b4c4;
+    transition: 0.2s;
+}
+
+.close:hover {
+    color: #e74c3c;
+    transform: rotate(90deg);
+}
+
+/* ===== عناصر البيع والشراء (مطورة) ===== */
+.sell-item, .buy-item {
+    background: white;
+    border-radius: 20px;
+    padding: 20px;
+    margin-bottom: 15px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    border-right: 6px solid #f39c12;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    align-items: center;
+    transition: 0.2s;
+}
+
+.sell-item:hover, .buy-item:hover {
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+}
+
+.sell-item select, .buy-item select {
+    flex: 2;
+    min-width: 200px;
+    border-radius: 16px;
+    border: 1px solid #cbdae6;
+    background: #f9fcff;
+}
+
+.sell-item input, .buy-item input {
+    flex: 1;
+    min-width: 120px;
+}
+
+.sell-item span, .buy-item span {
+    min-width: 120px;
+    font-weight: 600;
+    color: #27ae60;
+}
+
+.sell-item span:last-of-type, .buy-item span:last-of-type {
+    color: #e67e22;
+}
+
+.sell-item button, .buy-item button {
+    background: linear-gradient(145deg, #e74c3c, #c0392b);
+    color: white;
+    border: none;
+    padding: 12px 18px;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: 0.2s;
+    box-shadow: 0 5px 15px rgba(231, 76, 60, 0.3);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+}
+
+.sell-item button:hover, .buy-item button:hover {
+    background: linear-gradient(145deg, #c0392b, #a93226);
+    transform: scale(1.05);
+    box-shadow: 0 8px 20px rgba(231, 76, 60, 0.5);
+}
+
+.total {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #27ae60;
+    margin: 25px 0;
+    text-align: center;
+    background: #e4f3e4;
+    padding: 15px;
+    border-radius: 60px;
+    box-shadow: inset 0 2px 5px rgba(0,0,0,0.05);
+}
+
+/* ===== شريط الإجراءات ===== */
+.action-bar {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 25px;
+    flex-wrap: wrap;
+}
+
+.action-bar input {
+    flex: 1;
+    min-width: 220px;
+    border-radius: 40px;
+    padding: 14px 22px;
+}
+
+@media (max-width: 768px) {
+    .action-bar {
+        flex-direction: column;
+    }
+    .action-bar .btn {
+        width: 100%;
+        margin: 5px 0;
+    }
+}
+
+/* ===== الحالات ===== */
+.status {
+    padding: 6px 16px;
+    border-radius: 40px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    display: inline-block;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+}
+
+.status.pending {
+    background: linear-gradient(145deg, #f39c12, #e67e22);
+    color: white;
+}
+
+.status.completed {
+    background: linear-gradient(145deg, #27ae60, #2ecc71);
+    color: white;
+}
+
+/* ===== تحسينات الهاتف ===== */
+@media (max-width: 768px) {
+    .sidebar {
+        right: -100%;
+        width: 280px;
+        transition: right 0.3s ease;
+    }
+    .sidebar.show {
+        right: 0;
+    }
+    .sidebar.collapsed {
+        width: 280px;
+    }
+    .sidebar.collapsed .sidebar-header h3,
+    .sidebar.collapsed .sidebar-menu li span {
+        display: block;
+    }
+    .main-content {
+        margin-right: 0;
+    }
+    .sidebar-overlay {
+        display: none;
+        position: fixed;
+        top: 75px;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.4);
+        z-index: 97;
+    }
+    .sidebar-overlay.show {
+        display: block;
+    }
+    .header-title {
+        font-size: 1.3rem;
+        position: static;
+        transform: none;
+        margin: 0 auto;
+    }
+    .btn-logout span {
+        display: none;
+    }
+    .stats-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+    .stat-card {
+        padding: 15px;
+    }
+    .stat-value {
+        font-size: 1.6rem;
+    }
+    .sell-item, .buy-item {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .sell-item select, .buy-item select,
+    .sell-item input, .buy-item input {
+        width: 100%;
+    }
+    .sell-item button, .buy-item button {
+        width: 100%;
+        justify-content: center;
+    }
+    .total {
+        font-size: 1.6rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    .header-title {
+        font-size: 1.1rem;
+    }
+}
+
+/* ===== تنسيقات الطباعة ===== */
+@media print {
+    body * {
+        visibility: hidden;
+    }
+    .section.active, .section.active * {
+        visibility: visible;
+    }
+    .section.active {
+        position: absolute;
+        top: 0;
+        right: 0;
+        left: 0;
+        margin: 0;
+        padding: 20px;
+        background: white;
+    }
+    .sidebar, .app-header, .notification-bar, .action-bar, .modal, .chart-container canvas {
+        display: none !important;
+    }
+    table {
+        border-collapse: collapse;
+        width: 100%;
+    }
+    th, td {
+        border: 1px solid #000;
+        padding: 8px;
+        text-align: right;
+    }
+    th {
+        background-color: #2c3e50 !important;
+        color: white !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+}

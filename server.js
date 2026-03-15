@@ -28,6 +28,7 @@ pool.connect((err) => {
 
 async function initDatabase() {
   try {
+    // جدول المستخدمين
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
@@ -36,20 +37,31 @@ async function initDatabase() {
       );
     `);
 
+    // جدول الأصناف - إنشاء مع الأعمدة الأساسية أولاً
     await pool.query(`
       CREATE TABLE IF NOT EXISTS items (
         id SERIAL PRIMARY KEY,
         name VARCHAR(200) NOT NULL,
         quantity INTEGER DEFAULT 0,
-        pieces_per_carton INTEGER DEFAULT 1,
-        cost_piece DECIMAL(10,2) DEFAULT 0,
-        price_piece DECIMAL(10,2) DEFAULT 0,
-        cost_carton DECIMAL(10,2) DEFAULT 0,
-        price_carton DECIMAL(10,2) DEFAULT 0,
+        price DECIMAL(10,2) DEFAULT 0,
+        cost DECIMAL(10,2) DEFAULT 0,
         min_stock INTEGER DEFAULT 0
       );
     `);
 
+    // إضافة الأعمدة الجديدة إذا لم تكن موجودة (بأمان)
+    try {
+      await pool.query(`ALTER TABLE items ADD COLUMN IF NOT EXISTS pieces_per_carton INTEGER DEFAULT 1;`);
+      await pool.query(`ALTER TABLE items ADD COLUMN IF NOT EXISTS cost_piece DECIMAL(10,2) DEFAULT 0;`);
+      await pool.query(`ALTER TABLE items ADD COLUMN IF NOT EXISTS price_piece DECIMAL(10,2) DEFAULT 0;`);
+      await pool.query(`ALTER TABLE items ADD COLUMN IF NOT EXISTS cost_carton DECIMAL(10,2) DEFAULT 0;`);
+      await pool.query(`ALTER TABLE items ADD COLUMN IF NOT EXISTS price_carton DECIMAL(10,2) DEFAULT 0;`);
+      console.log('✅ تم التحقق من الأعمدة الإضافية');
+    } catch (err) {
+      console.log('⚠️ بعض الأعمدة موجودة مسبقاً أو لا يمكن إضافتها');
+    }
+
+    // جدول المبيعات
     await pool.query(`
       CREATE TABLE IF NOT EXISTS sales (
         id SERIAL PRIMARY KEY,
@@ -59,6 +71,7 @@ async function initDatabase() {
       );
     `);
 
+    // جدول عناصر المبيعات
     await pool.query(`
       CREATE TABLE IF NOT EXISTS sale_items (
         id SERIAL PRIMARY KEY,
@@ -72,6 +85,7 @@ async function initDatabase() {
       );
     `);
 
+    // جدول المشتريات
     await pool.query(`
       CREATE TABLE IF NOT EXISTS purchases (
         id SERIAL PRIMARY KEY,
@@ -80,6 +94,7 @@ async function initDatabase() {
       );
     `);
 
+    // جدول عناصر المشتريات
     await pool.query(`
       CREATE TABLE IF NOT EXISTS purchase_items (
         id SERIAL PRIMARY KEY,
@@ -92,6 +107,7 @@ async function initDatabase() {
       );
     `);
 
+    // جدول الإرساليات
     await pool.query(`
       CREATE TABLE IF NOT EXISTS shipments (
         id SERIAL PRIMARY KEY,
@@ -106,6 +122,7 @@ async function initDatabase() {
       );
     `);
 
+    // إنشاء مستخدم افتراضي إذا لم يكن موجوداً
     const userCheck = await pool.query('SELECT * FROM users WHERE username = $1', ['عاصم عبدالله ود كمون']);
     if (userCheck.rows.length === 0) {
       const hashedPassword = await bcrypt.hash('admin123', 10);
@@ -119,6 +136,7 @@ async function initDatabase() {
 
 // ==================== مسارات API ====================
 
+// تسجيل الدخول
 app.post('/api/login', async (req, res) => {
   const { username, password } = req.body;
   try {
@@ -133,6 +151,7 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
+// تغيير كلمة المرور
 app.post('/api/change-password', async (req, res) => {
   const { oldPassword, newPassword } = req.body;
   const username = 'عاصم عبدالله ود كمون';
@@ -150,7 +169,7 @@ app.post('/api/change-password', async (req, res) => {
   }
 });
 
-// الأصناف
+// الأصناف (مع دعم الأعمدة الجديدة)
 app.get('/api/items', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM items ORDER BY id');
@@ -171,6 +190,7 @@ app.post('/api/items', async (req, res) => {
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
+    console.error('خطأ في إضافة صنف:', err);
     res.status(500).json({ error: err.message });
   }
 });
