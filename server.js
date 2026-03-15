@@ -291,19 +291,33 @@ app.delete('/api/sales/:id', async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+
+    // استرجاع عناصر المبيعة لاستعادة الكمية
     const itemsRes = await client.query(
-      'SELECT item_id, unit, quantity, pieces_per_carton FROM sale_items si JOIN items i ON si.item_id = i.id WHERE si.sale_id = $1',
+      'SELECT item_id, unit, quantity FROM sale_items WHERE sale_id = $1',
       [id]
     );
+
+    // استرجاع pieces_per_carton لكل صنف
     for (const row of itemsRes.rows) {
-      const qtyToAdd = row.unit === 'carton' ? row.quantity * row.pieces_per_carton : row.quantity;
+      const itemInfo = await client.query(
+        'SELECT pieces_per_carton FROM items WHERE id = $1',
+        [row.item_id]
+      );
+      const piecesPerCarton = itemInfo.rows[0]?.pieces_per_carton || 1;
+      
+      const qtyToAdd = row.unit === 'carton' ? row.quantity * piecesPerCarton : row.quantity;
       await client.query('UPDATE items SET quantity = quantity + $1 WHERE id = $2', [qtyToAdd, row.item_id]);
     }
+
+    // حذف المبيعة (سيتم حذف العناصر تلقائياً بسبب ON DELETE CASCADE)
     await client.query('DELETE FROM sales WHERE id = $1', [id]);
+
     await client.query('COMMIT');
     res.json({ message: 'تم الحذف' });
   } catch (err) {
     await client.query('ROLLBACK');
+    console.error('خطأ في حذف المبيعة:', err);
     res.status(500).json({ error: err.message });
   } finally {
     client.release();
@@ -359,19 +373,30 @@ app.delete('/api/purchases/:id', async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+
     const itemsRes = await client.query(
-      'SELECT item_id, unit, quantity, pieces_per_carton FROM purchase_items pi JOIN items i ON pi.item_id = i.id WHERE pi.purchase_id = $1',
+      'SELECT item_id, unit, quantity FROM purchase_items WHERE purchase_id = $1',
       [id]
     );
+
     for (const row of itemsRes.rows) {
-      const qtyToSubtract = row.unit === 'carton' ? row.quantity * row.pieces_per_carton : row.quantity;
+      const itemInfo = await client.query(
+        'SELECT pieces_per_carton FROM items WHERE id = $1',
+        [row.item_id]
+      );
+      const piecesPerCarton = itemInfo.rows[0]?.pieces_per_carton || 1;
+
+      const qtyToSubtract = row.unit === 'carton' ? row.quantity * piecesPerCarton : row.quantity;
       await client.query('UPDATE items SET quantity = quantity - $1 WHERE id = $2', [qtyToSubtract, row.item_id]);
     }
+
     await client.query('DELETE FROM purchases WHERE id = $1', [id]);
+
     await client.query('COMMIT');
     res.json({ message: 'تم الحذف' });
   } catch (err) {
     await client.query('ROLLBACK');
+    console.error('خطأ في حذف المشتريات:', err);
     res.status(500).json({ error: err.message });
   } finally {
     client.release();
