@@ -139,6 +139,7 @@
                                 <th>سعر شراء القطعة</th>
                                 <th>سعر بيع الكرتونة</th>
                                 <th>سعر شراء الكرتونة</th>
+                                <th>عدد القطع/كرتونة</th>
                                 <th>أقل كمية</th>
                                 <th>إجراءات</th>
                             </tr>
@@ -280,57 +281,66 @@
         </div>
     </div>
 
-    <!-- Modal إضافة/تعديل صنف (مع دعم القطعة والكرتونة) -->
+    <!-- Modal إضافة/تعديل صنف مع تحديد النوع أولاً -->
     <div id="itemModal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeItemModal()">&times;</span>
             <h3 id="modalTitle">إضافة صنف</h3>
             <form id="itemForm">
                 <input type="hidden" id="itemId">
-
+                
                 <!-- اسم الصنف -->
                 <div class="form-group">
                     <label>اسم الصنف</label>
                     <input type="text" id="itemName" required>
                 </div>
 
-                <!-- عدد القطع في الكرتونة (مخفي ولكن قيمته 1 افتراضياً) -->
-                <div style="display: none;">
-                    <input type="number" id="itemPiecesPerCarton" value="1" min="1">
+                <!-- اختيار نوع البيع (قطعة أو كرتونة) -->
+                <div class="form-group">
+                    <label>نوع البيع</label>
+                    <select id="itemType" onchange="toggleItemTypeFields()" required>
+                        <option value="">اختر النوع...</option>
+                        <option value="piece">قطعة</option>
+                        <option value="carton">كرتونة</option>
+                    </select>
                 </div>
 
-                <!-- حقلين منفصلين للقطعة والكرتونة مع عرض الربح -->
-                <div style="display: flex; gap: 20px; flex-wrap: wrap;">
-                    <!-- بيانات القطعة -->
-                    <div style="flex: 1; min-width: 250px; background: #f9f9f9; padding: 15px; border-radius: 8px;">
-                        <h4 style="color: #2c3e50; margin-bottom: 10px;">البيع بالقطعة</h4>
-                        <div class="form-group">
-                            <label>سعر شراء القطعة</label>
-                            <input type="number" step="0.01" id="itemCostPiece" value="0" oninput="calculateItemProfit()">
-                        </div>
-                        <div class="form-group">
-                            <label>سعر بيع القطعة</label>
-                            <input type="number" step="0.01" id="itemPricePiece" value="0" oninput="calculateItemProfit()">
-                        </div>
-                        <div class="profit-display" id="profitPieceDisplay" style="font-size: 1.2rem; color: #27ae60; text-align: center;">
-                            الربح: 0 ج.س
-                        </div>
+                <!-- حقول القطعة (تظهر عند اختيار "قطعة") -->
+                <div id="pieceFields" style="display: none; background: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                    <h4 style="color: #2c3e50; margin-bottom: 10px;">بيانات القطعة</h4>
+                    <div class="form-group">
+                        <label>سعر شراء القطعة</label>
+                        <input type="number" step="0.01" id="itemCostPiece" value="0" oninput="calculateProfit()">
                     </div>
+                    <div class="form-group">
+                        <label>سعر بيع القطعة</label>
+                        <input type="number" step="0.01" id="itemPricePiece" value="0" oninput="calculateProfit()">
+                    </div>
+                    <div class="profit-display" id="profitPieceDisplay" style="font-size: 1.2rem; color: #27ae60; text-align: center;">
+                        الربح للقطعة: 0 ج.س
+                    </div>
+                </div>
 
-                    <!-- بيانات الكرتونة -->
-                    <div style="flex: 1; min-width: 250px; background: #f9f9f9; padding: 15px; border-radius: 8px;">
-                        <h4 style="color: #2c3e50; margin-bottom: 10px;">البيع بالكرتونة</h4>
-                        <div class="form-group">
-                            <label>سعر شراء الكرتونة</label>
-                            <input type="number" step="0.01" id="itemCostCarton" value="0" oninput="calculateItemProfit()">
-                        </div>
-                        <div class="form-group">
-                            <label>سعر بيع الكرتونة</label>
-                            <input type="number" step="0.01" id="itemPriceCarton" value="0" oninput="calculateItemProfit()">
-                        </div>
-                        <div class="profit-display" id="profitCartonDisplay" style="font-size: 1.2rem; color: #27ae60; text-align: center;">
-                            الربح: 0 ج.س
-                        </div>
+                <!-- حقول الكرتونة (تظهر عند اختيار "كرتونة") -->
+                <div id="cartonFields" style="display: none; background: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                    <h4 style="color: #2c3e50; margin-bottom: 10px;">بيانات الكرتونة</h4>
+                    <div class="form-group">
+                        <label>عدد القطع في الكرتونة</label>
+                        <input type="number" id="itemPiecesPerCarton" value="1" min="1" oninput="calculateProfit()">
+                    </div>
+                    <div class="form-group">
+                        <label>سعر شراء الكرتونة</label>
+                        <input type="number" step="0.01" id="itemCostCarton" value="0" oninput="calculateProfit()">
+                    </div>
+                    <div class="form-group">
+                        <label>سعر بيع الكرتونة</label>
+                        <input type="number" step="0.01" id="itemPriceCarton" value="0" oninput="calculateProfit()">
+                    </div>
+                    <div class="profit-display" id="profitCartonDisplay" style="font-size: 1.2rem; color: #27ae60; text-align: center;">
+                        الربح للكرتونة: 0 ج.س
+                    </div>
+                    <div class="profit-display" id="profitPerPieceDisplay" style="font-size: 1rem; color: #3498db; text-align: center;">
+                        تكلفة القطعة: 0 ج.س
                     </div>
                 </div>
 

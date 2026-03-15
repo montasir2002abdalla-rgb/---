@@ -259,7 +259,7 @@ window.addEventListener('resize', function() {
     }
 });
 
-// ==================== الأصناف (مع دعم القطعة والكرتونة) ====================
+// ==================== الأصناف (مع دعم القطعة والكرتونة وتحديد النوع أولاً) ====================
 async function loadItems() {
     const search = document.getElementById('searchItem')?.value || '';
     try {
@@ -270,12 +270,13 @@ async function loadItems() {
         const tbody = document.getElementById('itemsBody');
         tbody.innerHTML = filtered.map(item => `
             <tr>
-                <td data-label="الاسم">${item.name}</td>
-                <td data-label="الكمية">${item.quantity}</td>
+                <td data-label="الاسم">${item.name || ''}</td>
+                <td data-label="الكمية">${item.quantity || 0}</td>
                 <td data-label="سعر بيع القطعة">${item.price_piece || 0}</td>
                 <td data-label="سعر شراء القطعة">${item.cost_piece || 0}</td>
                 <td data-label="سعر بيع الكرتونة">${item.price_carton || 0}</td>
                 <td data-label="سعر شراء الكرتونة">${item.cost_carton || 0}</td>
+                <td data-label="عدد القطع/كرتونة">${item.pieces_per_carton || 1}</td>
                 <td data-label="أقل كمية">${item.min_stock || 0}</td>
                 <td data-label="إجراءات">
                     <button class="btn btn-warning btn-sm" onclick="editItem(${item.id})"><i class="fas fa-edit"></i></button>
@@ -289,12 +290,38 @@ async function loadItems() {
     }
 }
 
+function toggleItemTypeFields() {
+    const type = document.getElementById('itemType').value;
+    document.getElementById('pieceFields').style.display = type === 'piece' ? 'block' : 'none';
+    document.getElementById('cartonFields').style.display = type === 'carton' ? 'block' : 'none';
+    calculateProfit();
+}
+
+function calculateProfit() {
+    const type = document.getElementById('itemType').value;
+  
+    if (type === 'piece') {
+        const costPiece = parseFloat(document.getElementById('itemCostPiece').value) || 0;
+        const pricePiece = parseFloat(document.getElementById('itemPricePiece').value) || 0;
+        const profitPiece = pricePiece - costPiece;
+        document.getElementById('profitPieceDisplay').innerText = `الربح للقطعة: ${profitPiece.toFixed(2)} ج.س`;
+    } else if (type === 'carton') {
+        const pieces = parseInt(document.getElementById('itemPiecesPerCarton').value) || 1;
+        const costCarton = parseFloat(document.getElementById('itemCostCarton').value) || 0;
+        const priceCarton = parseFloat(document.getElementById('itemPriceCarton').value) || 0;
+        const costPerPiece = costCarton / pieces;
+        const profitCarton = priceCarton - costCarton;
+        document.getElementById('profitCartonDisplay').innerText = `الربح للكرتونة: ${profitCarton.toFixed(2)} ج.س`;
+        document.getElementById('profitPerPieceDisplay').innerHTML = `تكلفة القطعة: ${costPerPiece.toFixed(2)} ج.س`;
+    }
+}
+
 function showAddItemModal() {
     document.getElementById('modalTitle').innerText = 'إضافة صنف';
     document.getElementById('itemForm').reset();
     document.getElementById('itemId').value = '';
-    document.getElementById('itemPiecesPerCarton').value = '1'; // قيمة افتراضية
-    calculateItemProfit();
+    document.getElementById('itemType').value = '';
+    toggleItemTypeFields();
     document.getElementById('itemModal').style.display = 'flex';
 }
 
@@ -304,14 +331,29 @@ function editItem(id) {
     document.getElementById('modalTitle').innerText = 'تعديل صنف';
     document.getElementById('itemId').value = item.id;
     document.getElementById('itemName').value = item.name;
-    document.getElementById('itemPiecesPerCarton').value = item.pieces_per_carton || 1;
-    document.getElementById('itemCostPiece').value = item.cost_piece || 0;
-    document.getElementById('itemPricePiece').value = item.price_piece || 0;
-    document.getElementById('itemCostCarton').value = item.cost_carton || 0;
-    document.getElementById('itemPriceCarton').value = item.price_carton || 0;
     document.getElementById('itemQuantity').value = item.quantity;
     document.getElementById('itemMinStock').value = item.min_stock || 0;
-    calculateItemProfit();
+
+    // تحديد النوع بناءً على البيانات
+    if (item.cost_piece && item.price_piece && (!item.cost_carton || item.cost_carton === 0)) {
+        document.getElementById('itemType').value = 'piece';
+        document.getElementById('itemCostPiece').value = item.cost_piece;
+        document.getElementById('itemPricePiece').value = item.price_piece;
+        document.getElementById('itemPiecesPerCarton').value = 1;
+        document.getElementById('itemCostCarton').value = 0;
+        document.getElementById('itemPriceCarton').value = 0;
+    } else if (item.cost_carton && item.price_carton) {
+        document.getElementById('itemType').value = 'carton';
+        document.getElementById('itemPiecesPerCarton').value = item.pieces_per_carton || 1;
+        document.getElementById('itemCostCarton').value = item.cost_carton;
+        document.getElementById('itemPriceCarton').value = item.price_carton;
+        // حساب cost_piece لعرضه في حقول القطعة (اختياري)
+        document.getElementById('itemCostPiece').value = (item.cost_carton / (item.pieces_per_carton || 1)).toFixed(2);
+        document.getElementById('itemPricePiece').value = 0;
+    }
+  
+    toggleItemTypeFields();
+    calculateProfit();
     document.getElementById('itemModal').style.display = 'flex';
 }
 
@@ -319,73 +361,69 @@ function closeItemModal() {
     document.getElementById('itemModal').style.display = 'none';
 }
 
-// حساب وعرض الربح للقطعة والكرتونة
-function calculateItemProfit() {
-    // ربح القطعة
-    const costPiece = parseFloat(document.getElementById('itemCostPiece').value) || 0;
-    const pricePiece = parseFloat(document.getElementById('itemPricePiece').value) || 0;
-    const profitPiece = pricePiece - costPiece;
-    document.getElementById('profitPieceDisplay').innerText = `الربح: ${profitPiece.toFixed(2)} ج.س`;
-
-    // ربح الكرتونة
-    const costCarton = parseFloat(document.getElementById('itemCostCarton').value) || 0;
-    const priceCarton = parseFloat(document.getElementById('itemPriceCarton').value) || 0;
-    const profitCarton = priceCarton - costCarton;
-    document.getElementById('profitCartonDisplay').innerText = `الربح: ${profitCarton.toFixed(2)} ج.س`;
-}
-
-// عند تغيير سعر شراء الكرتونة أو عدد القطع، يتم تحديث سعر شراء القطعة تلقائياً (اختياري)
-document.getElementById('itemCostCarton').addEventListener('input', function() {
-    const pieces = parseInt(document.getElementById('itemPiecesPerCarton').value) || 1;
-    const costCarton = parseFloat(this.value) || 0;
-    const costPiece = costCarton / pieces;
-    document.getElementById('itemCostPiece').value = costPiece.toFixed(2);
-    calculateItemProfit();
-});
-
-document.getElementById('itemPiecesPerCarton').addEventListener('input', function() {
-    const pieces = parseInt(this.value) || 1;
-    const costCarton = parseFloat(document.getElementById('itemCostCarton').value) || 0;
-    const costPiece = costCarton / pieces;
-    document.getElementById('itemCostPiece').value = costPiece.toFixed(2);
-    calculateItemProfit();
-});
-
-// إرسال النموذج
 document.getElementById('itemForm').addEventListener('submit', async (e) => {
     e.preventDefault();
+  
+    const type = document.getElementById('itemType').value;
+    if (!type) {
+        alert('الرجاء اختيار نوع البيع (قطعة أو كرتونة)');
+        return;
+    }
+
     const id = document.getElementById('itemId').value;
-    const pieces = parseInt(document.getElementById('itemPiecesPerCarton').value) || 1;
-    const costPiece = parseFloat(document.getElementById('itemCostPiece').value) || 0;
-    const pricePiece = parseFloat(document.getElementById('itemPricePiece').value) || 0;
-    const costCarton = parseFloat(document.getElementById('itemCostCarton').value) || 0;
-    const priceCarton = parseFloat(document.getElementById('itemPriceCarton').value) || 0;
     const item = {
         name: document.getElementById('itemName').value,
-        pieces_per_carton: pieces,
-        cost_piece: costPiece,
-        price_piece: pricePiece,
-        cost_carton: costCarton,
-        price_carton: priceCarton,
         quantity: parseInt(document.getElementById('itemQuantity').value) || 0,
         min_stock: parseInt(document.getElementById('itemMinStock').value) || 0
     };
-    try {
-        if (id) {
-            await fetch(`/api/items/${id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(item)
-            });
-            alert('تم التحديث');
-        } else {
-            await fetch('/api/items', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(item)
-            });
-            alert('تمت الإضافة');
+
+    if (!item.name) {
+        alert('الرجاء إدخال اسم الصنف');
+        return;
+    }
+
+    if (type === 'piece') {
+        item.pieces_per_carton = 1;
+        item.cost_piece = parseFloat(document.getElementById('itemCostPiece').value) || 0;
+        item.price_piece = parseFloat(document.getElementById('itemPricePiece').value) || 0;
+        item.cost_carton = 0;
+        item.price_carton = 0;
+    
+        if (item.cost_piece === 0 || item.price_piece === 0) {
+            alert('الرجاء إدخال سعر الشراء وسعر البيع للقطعة');
+            return;
         }
+    } else {
+        const pieces = parseInt(document.getElementById('itemPiecesPerCarton').value) || 1;
+        item.pieces_per_carton = pieces;
+        item.cost_carton = parseFloat(document.getElementById('itemCostCarton').value) || 0;
+        item.price_carton = parseFloat(document.getElementById('itemPriceCarton').value) || 0;
+        item.cost_piece = item.cost_carton / pieces; // حساب تكلفة القطعة
+        item.price_piece = 0; // غير مستخدم للكرتونة
+
+        if (item.cost_carton === 0 || item.price_carton === 0) {
+            alert('الرجاء إدخال سعر الشراء وسعر البيع للكرتونة');
+            return;
+        }
+    }
+
+    try {
+        const url = id ? `/api/items/${id}` : '/api/items';
+        const method = id ? 'PUT' : 'POST';
+    
+        const res = await fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(item)
+        });
+
+        const data = await res.json();
+    
+        if (!res.ok) {
+            throw new Error(data.error || 'فشل في حفظ البيانات');
+        }
+
+        alert(id ? 'تم التحديث بنجاح' : 'تمت الإضافة بنجاح');
         closeItemModal();
         await loadItems();
         await loadDashboard();
@@ -394,6 +432,7 @@ document.getElementById('itemForm').addEventListener('submit', async (e) => {
         await loadLowStock();
     } catch (error) {
         alert('حدث خطأ: ' + error.message);
+        console.error('خطأ:', error);
     }
 });
 
@@ -686,7 +725,7 @@ async function loadSalesList() {
         tbody.innerHTML = sales.map(s => `
             <tr>
                 <td data-label="التاريخ">${new Date(s.date).toLocaleString('ar-EG')}</td>
-                <td data-label="المبلغ">${s.total}</td>
+                <td data-label="المبلغ">${s.total || 0}</td>
                 <td data-label="طريقة الدفع">${s.payment_method === 'bank' ? 'بنكك' : s.payment_method === 'cash' ? 'كاش' : 'فوري'}</td>
                 <td data-label="الربح">${s.profit || 0}</td>
                 <td data-label="إجراءات">
@@ -754,7 +793,7 @@ async function loadPurchasesList() {
         tbody.innerHTML = purchases.map(p => `
             <tr>
                 <td data-label="التاريخ">${new Date(p.date).toLocaleString('ar-EG')}</td>
-                <td data-label="المبلغ">${p.total}</td>
+                <td data-label="المبلغ">${p.total || 0}</td>
                 <td data-label="إجراءات">
                     <button class="btn btn-danger btn-sm" onclick="deletePurchase(${p.id})"><i class="fas fa-trash"></i></button>
                 </td>
@@ -795,13 +834,13 @@ async function loadShipments() {
         tbody.innerHTML = shipments.map(s => `
             <tr>
                 <td data-label="التاريخ">${new Date(s.date).toLocaleString('ar-EG')}</td>
-                <td data-label="الاسم">${s.person_name}</td>
-                <td data-label="المنطقة">${s.region}</td>
-                <td data-label="القطعة">${s.item_description}</td>
-                <td data-label="سعر القطعة">${s.item_price}</td>
-                <td data-label="أتعابي">${s.my_fee}</td>
-                <td data-label="الإجمالي">${s.total}</td>
-                <td data-label="الحالة"><span class="status ${s.status}">${s.status === 'pending' ? 'قيد التنفيذ' : 'مكتملة'}</span></td>
+                <td data-label="الاسم">${s.person_name || ''}</td>
+                <td data-label="المنطقة">${s.region || ''}</td>
+                <td data-label="القطعة">${s.item_description || ''}</td>
+                <td data-label="سعر القطعة">${s.item_price || 0}</td>
+                <td data-label="أتعابي">${s.my_fee || 0}</td>
+                <td data-label="الإجمالي">${s.total || 0}</td>
+                <td data-label="الحالة"><span class="status ${s.status || 'pending'}">${s.status === 'pending' ? 'قيد التنفيذ' : 'مكتملة'}</span></td>
                 <td data-label="إجراءات">
                     <button class="btn btn-warning btn-sm" onclick="editShipment(${s.id})"><i class="fas fa-edit"></i></button>
                     <button class="btn btn-danger btn-sm" onclick="deleteShipment(${s.id})"><i class="fas fa-trash"></i></button>
@@ -909,7 +948,7 @@ async function showSalesDetails() {
         const rows = sales.map(s => `
             <tr>
                 <td>${new Date(s.date).toLocaleString('ar-EG')}</td>
-                <td>${s.total}</td>
+                <td>${s.total || 0}</td>
                 <td>${s.payment_method === 'bank' ? 'بنكك' : s.payment_method === 'cash' ? 'كاش' : 'فوري'}</td>
                 <td>${s.profit || 0}</td>
             </tr>
@@ -933,7 +972,7 @@ async function showPurchasesDetails() {
         const rows = purchases.map(p => `
             <tr>
                 <td>${new Date(p.date).toLocaleString('ar-EG')}</td>
-                <td>${p.total}</td>
+                <td>${p.total || 0}</td>
             </tr>
         `).join('');
         showDetailsModal('تفاصيل المشتريات', headers, rows);
@@ -951,17 +990,17 @@ async function loadDashboard() {
         stats.innerHTML = `
             <div class="stat-card" onclick="showSalesDetails()">
                 <i class="fas fa-money-bill-wave"></i>
-                <div class="stat-value">${data.totalSales}</div>
+                <div class="stat-value">${data.totalSales || 0}</div>
                 <div class="stat-label">إجمالي المبيعات</div>
             </div>
             <div class="stat-card" onclick="showPurchasesDetails()">
                 <i class="fas fa-truck"></i>
-                <div class="stat-value">${data.totalPurchases}</div>
+                <div class="stat-value">${data.totalPurchases || 0}</div>
                 <div class="stat-label">إجمالي المشتريات</div>
             </div>
             <div class="stat-card">
                 <i class="fas fa-chart-line"></i>
-                <div class="stat-value">${data.totalProfit}</div>
+                <div class="stat-value">${data.totalProfit || 0}</div>
                 <div class="stat-label">إجمالي الأرباح</div>
             </div>
         `;
@@ -974,10 +1013,10 @@ async function loadDashboard() {
         dashboardChart = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: monthlyData.months,
+                labels: monthlyData.months || [],
                 datasets: [{
                     label: 'المبيعات',
-                    data: monthlyData.data,
+                    data: monthlyData.data || [],
                     backgroundColor: 'rgba(243, 156, 18, 0.2)',
                     borderColor: '#f39c12',
                     borderWidth: 2,
@@ -997,7 +1036,7 @@ async function loadDashboard() {
         const lowStock = items.filter(i => i.quantity <= i.min_stock);
         const lowTbody = document.querySelector('#dashboardLowStockTable tbody');
         lowTbody.innerHTML = lowStock.map(i => `
-            <tr><td data-label="الاسم">${i.name}</td><td data-label="الكمية">${i.quantity}</td><td data-label="أقل كمية">${i.min_stock}</td></tr>
+            <tr><td data-label="الاسم">${i.name || ''}</td><td data-label="الكمية">${i.quantity || 0}</td><td data-label="أقل كمية">${i.min_stock || 0}</td></tr>
         `).join('');
     } catch (error) {
         console.error(error);
@@ -1013,17 +1052,17 @@ async function loadProfit() {
         stats.innerHTML = `
             <div class="stat-card">
                 <i class="fas fa-chart-line"></i>
-                <div class="stat-value">${data.totalProfit}</div>
+                <div class="stat-value">${data.totalProfit || 0}</div>
                 <div class="stat-label">إجمالي الأرباح</div>
             </div>
             <div class="stat-card">
                 <i class="fas fa-calendar-day"></i>
-                <div class="stat-value">${data.todayProfit}</div>
+                <div class="stat-value">${data.todayProfit || 0}</div>
                 <div class="stat-label">أرباح اليوم</div>
             </div>
             <div class="stat-card">
                 <i class="fas fa-calendar-alt"></i>
-                <div class="stat-value">${data.monthProfit}</div>
+                <div class="stat-value">${data.monthProfit || 0}</div>
                 <div class="stat-label">أرباح الشهر</div>
             </div>
         `;
@@ -1036,7 +1075,7 @@ async function loadProfit() {
                 labels: ['اليوم', 'الشهر', 'الإجمالي'],
                 datasets: [{
                     label: 'الأرباح',
-                    data: [data.todayProfit, data.monthProfit, data.totalProfit],
+                    data: [data.todayProfit || 0, data.monthProfit || 0, data.totalProfit || 0],
                     backgroundColor: ['#3498db', '#2ecc71', '#f39c12'],
                     borderWidth: 1
                 }]
@@ -1062,9 +1101,9 @@ async function loadLowStock() {
     if (!tbody) return;
     tbody.innerHTML = lowStock.map(i => `
         <tr>
-            <td data-label="الاسم">${i.name}</td>
-            <td data-label="الكمية">${i.quantity}</td>
-            <td data-label="أقل كمية">${i.min_stock}</td>
+            <td data-label="الاسم">${i.name || ''}</td>
+            <td data-label="الكمية">${i.quantity || 0}</td>
+            <td data-label="أقل كمية">${i.min_stock || 0}</td>
         </tr>
     `).join('');
 }
@@ -1078,17 +1117,17 @@ async function loadReports() {
         stats.innerHTML = `
             <div class="stat-card" onclick="showSalesDetails()">
                 <i class="fas fa-money-bill-wave"></i>
-                <div class="stat-value">${data.totalSales}</div>
+                <div class="stat-value">${data.totalSales || 0}</div>
                 <div class="stat-label">إجمالي المبيعات</div>
             </div>
             <div class="stat-card" onclick="showPurchasesDetails()">
                 <i class="fas fa-truck"></i>
-                <div class="stat-value">${data.totalPurchases}</div>
+                <div class="stat-value">${data.totalPurchases || 0}</div>
                 <div class="stat-label">إجمالي المشتريات</div>
             </div>
             <div class="stat-card">
                 <i class="fas fa-chart-line"></i>
-                <div class="stat-value">${data.totalProfit}</div>
+                <div class="stat-value">${data.totalProfit || 0}</div>
                 <div class="stat-label">إجمالي الأرباح</div>
             </div>
             <div class="stat-card" onclick="showSection('salesList')">
