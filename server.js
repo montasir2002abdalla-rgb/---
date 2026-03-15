@@ -37,29 +37,20 @@ async function initDatabase() {
       );
     `);
 
-    // جدول الأصناف - إنشاء مع الأعمدة الأساسية أولاً
+    // جدول الأصناف
     await pool.query(`
       CREATE TABLE IF NOT EXISTS items (
         id SERIAL PRIMARY KEY,
         name VARCHAR(200) NOT NULL,
         quantity INTEGER DEFAULT 0,
-        price DECIMAL(10,2) DEFAULT 0,
-        cost DECIMAL(10,2) DEFAULT 0,
+        pieces_per_carton INTEGER DEFAULT 1,
+        cost_piece DECIMAL(10,2) DEFAULT 0,
+        price_piece DECIMAL(10,2) DEFAULT 0,
+        cost_carton DECIMAL(10,2) DEFAULT 0,
+        price_carton DECIMAL(10,2) DEFAULT 0,
         min_stock INTEGER DEFAULT 0
       );
     `);
-
-    // إضافة الأعمدة الجديدة إذا لم تكن موجودة (بأمان)
-    try {
-      await pool.query(`ALTER TABLE items ADD COLUMN IF NOT EXISTS pieces_per_carton INTEGER DEFAULT 1;`);
-      await pool.query(`ALTER TABLE items ADD COLUMN IF NOT EXISTS cost_piece DECIMAL(10,2) DEFAULT 0;`);
-      await pool.query(`ALTER TABLE items ADD COLUMN IF NOT EXISTS price_piece DECIMAL(10,2) DEFAULT 0;`);
-      await pool.query(`ALTER TABLE items ADD COLUMN IF NOT EXISTS cost_carton DECIMAL(10,2) DEFAULT 0;`);
-      await pool.query(`ALTER TABLE items ADD COLUMN IF NOT EXISTS price_carton DECIMAL(10,2) DEFAULT 0;`);
-      console.log('✅ تم التحقق من الأعمدة الإضافية');
-    } catch (err) {
-      console.log('⚠️ بعض الأعمدة موجودة مسبقاً أو لا يمكن إضافتها');
-    }
 
     // جدول المبيعات
     await pool.query(`
@@ -169,7 +160,7 @@ app.post('/api/change-password', async (req, res) => {
   }
 });
 
-// الأصناف (مع دعم الأعمدة الجديدة)
+// الأصناف
 app.get('/api/items', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM items ORDER BY id');
@@ -266,6 +257,7 @@ app.post('/api/sales', async (req, res) => {
     res.status(201).json({ message: 'تم تسجيل البيع' });
   } catch (err) {
     await client.query('ROLLBACK');
+    console.error('خطأ في تسجيل البيع:', err);
     res.status(500).json({ error: err.message });
   } finally {
     client.release();
@@ -344,6 +336,7 @@ app.post('/api/purchases', async (req, res) => {
     res.status(201).json({ message: 'تم تسجيل الشراء' });
   } catch (err) {
     await client.query('ROLLBACK');
+    console.error('خطأ في تسجيل الشراء:', err);
     res.status(500).json({ error: err.message });
   } finally {
     client.release();
