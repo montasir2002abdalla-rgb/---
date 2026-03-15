@@ -131,7 +131,7 @@ function hideNotification() {
 }
 
 function checkLowStockNotification() {
-    const lowStock = items.filter(i => i.quantity <= i.min_stock);
+    const lowStock = items.filter(i => i.quantity <= i.minStock);
     if (lowStock.length > 0) {
         document.getElementById('notificationMessage').innerText = `تنبيه: يوجد ${lowStock.length} صنف منخفض المخزون`;
         document.getElementById('notificationBar').style.display = 'flex';
@@ -166,21 +166,43 @@ function showSection(section, save = true) {
 
     closeSidebarOnMobile();
 
-    // تفعيل القسم
-    const sectionMap = {
-        dashboard: () => { document.querySelector('.sidebar-menu li:nth-child(1)').classList.add('active'); document.getElementById('dashboardSection').classList.add('active'); loadDashboard(); },
-        items: () => { document.querySelector('.sidebar-menu li:nth-child(2)').classList.add('active'); document.getElementById('itemsSection').classList.add('active'); loadItems(); },
-        sell: () => { document.querySelector('.sidebar-menu li:nth-child(3)').classList.add('active'); document.getElementById('sellSection').classList.add('active'); },
-        buy: () => { document.querySelector('.sidebar-menu li:nth-child(4)').classList.add('active'); document.getElementById('buySection').classList.add('active'); },
-        profit: () => { document.querySelector('.sidebar-menu li:nth-child(5)').classList.add('active'); document.getElementById('profitSection').classList.add('active'); loadProfit(); },
-        lowstock: () => { document.querySelector('.sidebar-menu li:nth-child(6)').classList.add('active'); document.getElementById('lowstockSection').classList.add('active'); loadLowStock(); },
-        shipments: () => { document.querySelector('.sidebar-menu li:nth-child(7)').classList.add('active'); document.getElementById('shipmentsSection').classList.add('active'); loadShipments(); },
-        reports: () => { document.querySelector('.sidebar-menu li:nth-child(8)').classList.add('active'); document.getElementById('reportsSection').classList.add('active'); loadReports(); },
-        salesList: () => { document.getElementById('salesListSection').classList.add('active'); loadSalesList(); },
-        purchasesList: () => { document.getElementById('purchasesListSection').classList.add('active'); loadPurchasesList(); }
-    };
-
-    if (sectionMap[section]) sectionMap[section]();
+    if (section === 'dashboard') {
+        document.querySelector('.sidebar-menu li:nth-child(1)').classList.add('active');
+        document.getElementById('dashboardSection').classList.add('active');
+        loadDashboard();
+    } else if (section === 'items') {
+        document.querySelector('.sidebar-menu li:nth-child(2)').classList.add('active');
+        document.getElementById('itemsSection').classList.add('active');
+        loadItems();
+    } else if (section === 'sell') {
+        document.querySelector('.sidebar-menu li:nth-child(3)').classList.add('active');
+        document.getElementById('sellSection').classList.add('active');
+    } else if (section === 'buy') {
+        document.querySelector('.sidebar-menu li:nth-child(4)').classList.add('active');
+        document.getElementById('buySection').classList.add('active');
+    } else if (section === 'profit') {
+        document.querySelector('.sidebar-menu li:nth-child(5)').classList.add('active');
+        document.getElementById('profitSection').classList.add('active');
+        loadProfit();
+    } else if (section === 'lowstock') {
+        document.querySelector('.sidebar-menu li:nth-child(6)').classList.add('active');
+        document.getElementById('lowstockSection').classList.add('active');
+        loadLowStock();
+    } else if (section === 'shipments') {
+        document.querySelector('.sidebar-menu li:nth-child(7)').classList.add('active');
+        document.getElementById('shipmentsSection').classList.add('active');
+        loadShipments();
+    } else if (section === 'reports') {
+        document.querySelector('.sidebar-menu li:nth-child(8)').classList.add('active');
+        document.getElementById('reportsSection').classList.add('active');
+        loadReports();
+    } else if (section === 'salesList') {
+        document.getElementById('salesListSection').classList.add('active');
+        loadSalesList();
+    } else if (section === 'purchasesList') {
+        document.getElementById('purchasesListSection').classList.add('active');
+        loadPurchasesList();
+    }
 }
 
 // ==================== طي القائمة الجانبية ====================
@@ -433,7 +455,6 @@ async function submitSell() {
         return;
     }
 
-    // حساب إجمالي المبلغ والربح
     let totalAmount = 0;
     let totalProfit = 0;
     const saleItems = [];
@@ -1085,7 +1106,7 @@ function printSection(sectionId) {
     const section = document.getElementById(sectionId);
     if (!section) return;
 
-    const title = section.querySelector('h2')?.innerText || document.getElementById('headerTitle').innerText;
+    const title = section.querySelector('h3')?.innerText || document.getElementById('headerTitle').innerText;
     const printWindow = window.open('', '_blank');
     printWindow.document.write('<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8"><title>' + title + '</title>');
 
