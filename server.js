@@ -28,7 +28,7 @@ pool.connect((err) => {
 
 async function initDatabase() {
   try {
-    // جدول المستخدمين
+    // 1. جدول المستخدمين
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
@@ -37,22 +37,17 @@ async function initDatabase() {
       );
     `);
 
-    // جدول الأصناف
+    // 2. جدول الأصناف (بدون الأعمدة الجديدة أولاً)
     await pool.query(`
       CREATE TABLE IF NOT EXISTS items (
         id SERIAL PRIMARY KEY,
         name VARCHAR(200) NOT NULL,
         quantity INTEGER DEFAULT 0,
-        pieces_per_carton INTEGER DEFAULT 1,
-        cost_piece DECIMAL(10,2) DEFAULT 0,
-        price_piece DECIMAL(10,2) DEFAULT 0,
-        cost_carton DECIMAL(10,2) DEFAULT 0,
-        price_carton DECIMAL(10,2) DEFAULT 0,
         min_stock INTEGER DEFAULT 0
       );
     `);
 
-    // جدول المبيعات
+    // 3. جدول المبيعات
     await pool.query(`
       CREATE TABLE IF NOT EXISTS sales (
         id SERIAL PRIMARY KEY,
@@ -62,21 +57,19 @@ async function initDatabase() {
       );
     `);
 
-    // جدول عناصر المبيعات
+    // 4. جدول عناصر المبيعات (بدون الأعمدة الجديدة أولاً)
     await pool.query(`
       CREATE TABLE IF NOT EXISTS sale_items (
         id SERIAL PRIMARY KEY,
         sale_id INTEGER REFERENCES sales(id) ON DELETE CASCADE,
         item_id INTEGER REFERENCES items(id) ON DELETE CASCADE,
-        unit VARCHAR(10),
         quantity INTEGER,
         price DECIMAL(10,2),
-        total DECIMAL(10,2),
-        profit DECIMAL(10,2) DEFAULT 0
+        total DECIMAL(10,2)
       );
     `);
 
-    // جدول المشتريات
+    // 5. جدول المشتريات
     await pool.query(`
       CREATE TABLE IF NOT EXISTS purchases (
         id SERIAL PRIMARY KEY,
@@ -85,20 +78,19 @@ async function initDatabase() {
       );
     `);
 
-    // جدول عناصر المشتريات
+    // 6. جدول عناصر المشتريات (بدون الأعمدة الجديدة أولاً)
     await pool.query(`
       CREATE TABLE IF NOT EXISTS purchase_items (
         id SERIAL PRIMARY KEY,
         purchase_id INTEGER REFERENCES purchases(id) ON DELETE CASCADE,
         item_id INTEGER REFERENCES items(id) ON DELETE CASCADE,
-        unit VARCHAR(10),
         quantity INTEGER,
         price DECIMAL(10,2),
         total DECIMAL(10,2)
       );
     `);
 
-    // جدول الإرساليات
+    // 7. جدول الإرساليات
     await pool.query(`
       CREATE TABLE IF NOT EXISTS shipments (
         id SERIAL PRIMARY KEY,
@@ -113,6 +105,25 @@ async function initDatabase() {
       );
     `);
 
+    // الآن نضيف الأعمدة الجديدة (إذا لم تكن موجودة)
+    console.log('🔄 جاري إضافة الأعمدة الجديدة...');
+
+    // أعمدة items
+    await pool.query(`ALTER TABLE items ADD COLUMN IF NOT EXISTS pieces_per_carton INTEGER DEFAULT 1;`);
+    await pool.query(`ALTER TABLE items ADD COLUMN IF NOT EXISTS cost_piece DECIMAL(10,2) DEFAULT 0;`);
+    await pool.query(`ALTER TABLE items ADD COLUMN IF NOT EXISTS price_piece DECIMAL(10,2) DEFAULT 0;`);
+    await pool.query(`ALTER TABLE items ADD COLUMN IF NOT EXISTS cost_carton DECIMAL(10,2) DEFAULT 0;`);
+    await pool.query(`ALTER TABLE items ADD COLUMN IF NOT EXISTS price_carton DECIMAL(10,2) DEFAULT 0;`);
+
+    // أعمدة sale_items
+    await pool.query(`ALTER TABLE sale_items ADD COLUMN IF NOT EXISTS unit VARCHAR(10);`);
+    await pool.query(`ALTER TABLE sale_items ADD COLUMN IF NOT EXISTS profit DECIMAL(10,2) DEFAULT 0;`);
+
+    // أعمدة purchase_items
+    await pool.query(`ALTER TABLE purchase_items ADD COLUMN IF NOT EXISTS unit VARCHAR(10);`);
+
+    console.log('✅ تم إضافة الأعمدة الجديدة بنجاح');
+
     // إنشاء مستخدم افتراضي إذا لم يكن موجوداً
     const userCheck = await pool.query('SELECT * FROM users WHERE username = $1', ['عاصم عبدالله ود كمون']);
     if (userCheck.rows.length === 0) {
@@ -121,7 +132,7 @@ async function initDatabase() {
       console.log('✅ تم إنشاء المستخدم الافتراضي');
     }
   } catch (err) {
-    console.error('❌ خطأ في إنشاء الجداول', err);
+    console.error('❌ خطأ في إنشاء الجداول أو إضافة الأعمدة', err);
   }
 }
 
