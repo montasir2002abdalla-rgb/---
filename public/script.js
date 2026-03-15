@@ -3,6 +3,8 @@ let items = [];
 let sellItems = [];
 let buyItems = [];
 let shipments = [];
+let sales = [];
+let purchases = [];
 let dashboardChart, profitChart;
 
 // ==================== استعادة الجلسة عند تحميل الصفحة ====================
@@ -10,17 +12,13 @@ window.addEventListener('load', async function() {
     const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true' || localStorage.getItem('authToken');
     
     if (isLoggedIn) {
-        // استعادة حالة القائمة الجانبية حسب حجم الشاشة
         const sidebar = document.querySelector('.sidebar');
         const overlay = document.querySelector('.sidebar-overlay');
         
         if (window.innerWidth <= 768) {
-            // على الهاتف: نبدأ بالقائمة مخفية
-            sidebar?.classList.remove('show');
-            sidebar?.classList.remove('collapsed');
+            sidebar?.classList.remove('show', 'collapsed');
             overlay?.classList.remove('show');
         } else {
-            // على سطح المكتب: استعادة حالة الطي
             const sidebarState = localStorage.getItem('sidebarCollapsed') === 'true';
             if (sidebarState) {
                 sidebar?.classList.add('collapsed');
@@ -29,16 +27,12 @@ window.addEventListener('load', async function() {
                     btnIcon.classList.remove('fa-bars');
                     btnIcon.classList.add('fa-chevron-right');
                 }
-            } else {
-                sidebar?.classList.remove('collapsed');
             }
         }
 
-        // إظهار التطبيق
         document.getElementById('loginContainer').style.display = 'none';
         document.getElementById('mainApp').style.display = 'block';
 
-        // تحميل البيانات
         try {
             await loadItems();
             await loadShipments();
@@ -46,18 +40,19 @@ window.addEventListener('load', async function() {
             await loadProfit();
             await loadReports();
             await loadLowStock();
+            await loadSalesList();
+            await loadPurchasesList();
             checkLowStockNotification();
         } catch (error) {
             console.error('خطأ في تحميل البيانات:', error);
         }
 
-        // استعادة القسم المحفوظ
         const savedSection = localStorage.getItem('currentSection') || 'dashboard';
         showSection(savedSection, false);
     }
 });
 
-// إنشاء طبقة التعتيم وإضافتها إلى DOM (إذا لم تكن موجودة)
+// إنشاء طبقة التعتيم
 function createOverlay() {
     if (!document.querySelector('.sidebar-overlay')) {
         const overlay = document.createElement('div');
@@ -68,7 +63,6 @@ function createOverlay() {
 }
 createOverlay();
 
-// إغلاق القائمة الجانبية على الهاتف
 function closeSidebarOnMobile() {
     if (window.innerWidth <= 768) {
         document.querySelector('.sidebar')?.classList.remove('show');
@@ -90,11 +84,8 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
         });
         const data = await res.json();
         if (res.ok) {
-            if (data.token) {
-                localStorage.setItem('authToken', data.token);
-            } else {
-                localStorage.setItem('isLoggedIn', 'true');
-            }
+            if (data.token) localStorage.setItem('authToken', data.token);
+            else localStorage.setItem('isLoggedIn', 'true');
 
             document.getElementById('loginContainer').style.display = 'none';
             document.getElementById('mainApp').style.display = 'block';
@@ -105,6 +96,8 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
             await loadProfit();
             await loadReports();
             await loadLowStock();
+            await loadSalesList();
+            await loadPurchasesList();
             checkLowStockNotification();
 
             showSection('dashboard');
@@ -130,7 +123,7 @@ function logout() {
 // ==================== التنقل بين الأقسام ====================
 function goBack() {
     showSection('dashboard');
-    closeSidebarOnMobile(); // إغلاق القائمة إن كانت مفتوحة
+    closeSidebarOnMobile();
 }
 
 function hideNotification() {
@@ -138,7 +131,7 @@ function hideNotification() {
 }
 
 function checkLowStockNotification() {
-    const lowStock = items.filter(i => i.quantity <= i.minStock);
+    const lowStock = items.filter(i => i.quantity <= i.min_stock);
     if (lowStock.length > 0) {
         document.getElementById('notificationMessage').innerText = `تنبيه: يوجد ${lowStock.length} صنف منخفض المخزون`;
         document.getElementById('notificationBar').style.display = 'flex';
@@ -159,69 +152,46 @@ function showSection(section, save = true) {
         profit: 'الأرباح',
         lowstock: 'المخزون المنخفض',
         shipments: 'الإرساليات',
-        reports: 'التقارير المالية'
+        reports: 'التقارير المالية',
+        salesList: 'سجل المبيعات',
+        purchasesList: 'سجل المشتريات'
     };
 
     document.getElementById('headerTitle').innerText = titleMap[section] || 'الرئيسية';
 
     const backButton = document.getElementById('backButton');
-    if (section === 'dashboard') {
-        backButton.style.display = 'none';
-    } else {
-        backButton.style.display = 'inline-flex';
-    }
+    backButton.style.display = (section === 'dashboard') ? 'none' : 'inline-flex';
 
-    if (save) {
-        localStorage.setItem('currentSection', section);
-    }
+    if (save) localStorage.setItem('currentSection', section);
 
-    // إغلاق القائمة الجانبية على الهاتف بعد اختيار عنصر
     closeSidebarOnMobile();
 
-    if (section === 'dashboard') {
-        document.querySelector('.sidebar-menu li:nth-child(1)').classList.add('active');
-        document.getElementById('dashboardSection').classList.add('active');
-        loadDashboard();
-    } else if (section === 'items') {
-        document.querySelector('.sidebar-menu li:nth-child(2)').classList.add('active');
-        document.getElementById('itemsSection').classList.add('active');
-        loadItems();
-    } else if (section === 'sell') {
-        document.querySelector('.sidebar-menu li:nth-child(3)').classList.add('active');
-        document.getElementById('sellSection').classList.add('active');
-    } else if (section === 'buy') {
-        document.querySelector('.sidebar-menu li:nth-child(4)').classList.add('active');
-        document.getElementById('buySection').classList.add('active');
-    } else if (section === 'profit') {
-        document.querySelector('.sidebar-menu li:nth-child(5)').classList.add('active');
-        document.getElementById('profitSection').classList.add('active');
-        loadProfit();
-    } else if (section === 'lowstock') {
-        document.querySelector('.sidebar-menu li:nth-child(6)').classList.add('active');
-        document.getElementById('lowstockSection').classList.add('active');
-        loadLowStock();
-    } else if (section === 'shipments') {
-        document.querySelector('.sidebar-menu li:nth-child(7)').classList.add('active');
-        document.getElementById('shipmentsSection').classList.add('active');
-        loadShipments();
-    } else if (section === 'reports') {
-        document.querySelector('.sidebar-menu li:nth-child(8)').classList.add('active');
-        document.getElementById('reportsSection').classList.add('active');
-        loadReports();
-    }
+    // تفعيل القسم
+    const sectionMap = {
+        dashboard: () => { document.querySelector('.sidebar-menu li:nth-child(1)').classList.add('active'); document.getElementById('dashboardSection').classList.add('active'); loadDashboard(); },
+        items: () => { document.querySelector('.sidebar-menu li:nth-child(2)').classList.add('active'); document.getElementById('itemsSection').classList.add('active'); loadItems(); },
+        sell: () => { document.querySelector('.sidebar-menu li:nth-child(3)').classList.add('active'); document.getElementById('sellSection').classList.add('active'); },
+        buy: () => { document.querySelector('.sidebar-menu li:nth-child(4)').classList.add('active'); document.getElementById('buySection').classList.add('active'); },
+        profit: () => { document.querySelector('.sidebar-menu li:nth-child(5)').classList.add('active'); document.getElementById('profitSection').classList.add('active'); loadProfit(); },
+        lowstock: () => { document.querySelector('.sidebar-menu li:nth-child(6)').classList.add('active'); document.getElementById('lowstockSection').classList.add('active'); loadLowStock(); },
+        shipments: () => { document.querySelector('.sidebar-menu li:nth-child(7)').classList.add('active'); document.getElementById('shipmentsSection').classList.add('active'); loadShipments(); },
+        reports: () => { document.querySelector('.sidebar-menu li:nth-child(8)').classList.add('active'); document.getElementById('reportsSection').classList.add('active'); loadReports(); },
+        salesList: () => { document.getElementById('salesListSection').classList.add('active'); loadSalesList(); },
+        purchasesList: () => { document.getElementById('purchasesListSection').classList.add('active'); loadPurchasesList(); }
+    };
+
+    if (sectionMap[section]) sectionMap[section]();
 }
 
-// ==================== طي القائمة الجانبية مع الحفظ ====================
+// ==================== طي القائمة الجانبية ====================
 function toggleSidebar() {
     const sidebar = document.querySelector('.sidebar');
     const overlay = document.querySelector('.sidebar-overlay');
     const btnIcon = document.querySelector('.toggle-sidebar-btn i');
 
     if (window.innerWidth <= 768) {
-        // على الهاتف: نبدل حالة الظهور
         sidebar.classList.toggle('show');
         overlay.classList.toggle('show');
-        // تغيير الأيقونة بين bars و times للإشارة إلى الإغلاق
         if (sidebar.classList.contains('show')) {
             btnIcon.classList.remove('fa-bars');
             btnIcon.classList.add('fa-times');
@@ -230,7 +200,6 @@ function toggleSidebar() {
             btnIcon.classList.add('fa-bars');
         }
     } else {
-        // على سطح المكتب: طي عادي
         sidebar.classList.toggle('collapsed');
         if (sidebar.classList.contains('collapsed')) {
             btnIcon.classList.remove('fa-bars');
@@ -244,20 +213,17 @@ function toggleSidebar() {
     }
 }
 
-// الاستماع لتغيير حجم الشاشة
 window.addEventListener('resize', function() {
     const sidebar = document.querySelector('.sidebar');
     const overlay = document.querySelector('.sidebar-overlay');
     const btnIcon = document.querySelector('.toggle-sidebar-btn i');
 
     if (window.innerWidth <= 768) {
-        // انتقلنا إلى وضع الهاتف
         sidebar.classList.remove('collapsed', 'show');
         overlay.classList.remove('show');
         btnIcon?.classList.remove('fa-chevron-right', 'fa-times');
         btnIcon?.classList.add('fa-bars');
     } else {
-        // انتقلنا إلى وضع سطح المكتب
         sidebar.classList.remove('show');
         overlay.classList.remove('show');
         const sidebarState = localStorage.getItem('sidebarCollapsed') === 'true';
@@ -285,10 +251,13 @@ async function loadItems() {
         tbody.innerHTML = filtered.map(item => `
             <tr>
                 <td data-label="الاسم">${item.name}</td>
-                <td data-label="الكمية">${item.quantity}</td>
-                <td data-label="سعر البيع">${item.price}</td>
-                <td data-label="سعر الشراء">${item.cost || 0}</td>
-                <td data-label="أقل كمية للإنذار">${item.minStock || 0}</td>
+                <td data-label="الكمية (قطعة)">${item.quantity}</td>
+                <td data-label="قطع/كرتونة">${item.pieces_per_carton || 1}</td>
+                <td data-label="سعر القطعة">${item.price_piece || 0}</td>
+                <td data-label="سعر الكرتونة">${item.price_carton || 0}</td>
+                <td data-label="تكلفة القطعة">${item.cost_piece || 0}</td>
+                <td data-label="تكلفة الكرتونة">${item.cost_carton || 0}</td>
+                <td data-label="أقل كمية">${item.min_stock || 0}</td>
                 <td data-label="إجراءات">
                     <button class="btn btn-warning btn-sm" onclick="editItem(${item.id})"><i class="fas fa-edit"></i></button>
                     <button class="btn btn-danger btn-sm" onclick="deleteItem(${item.id})"><i class="fas fa-trash"></i></button>
@@ -315,9 +284,12 @@ function editItem(id) {
     document.getElementById('itemId').value = item.id;
     document.getElementById('itemName').value = item.name;
     document.getElementById('itemQuantity').value = item.quantity;
-    document.getElementById('itemPrice').value = item.price;
-    document.getElementById('itemCost').value = item.cost || 0;
-    document.getElementById('itemMinStock').value = item.minStock || 0;
+    document.getElementById('itemPiecesPerCarton').value = item.pieces_per_carton || 1;
+    document.getElementById('itemPricePiece').value = item.price_piece || 0;
+    document.getElementById('itemPriceCarton').value = item.price_carton || 0;
+    document.getElementById('itemCostPiece').value = item.cost_piece || 0;
+    document.getElementById('itemCostCarton').value = item.cost_carton || 0;
+    document.getElementById('itemMinStock').value = item.min_stock || 0;
     document.getElementById('itemModal').style.display = 'flex';
 }
 
@@ -331,9 +303,12 @@ document.getElementById('itemForm').addEventListener('submit', async (e) => {
     const item = {
         name: document.getElementById('itemName').value,
         quantity: parseInt(document.getElementById('itemQuantity').value),
-        price: parseFloat(document.getElementById('itemPrice').value),
-        cost: parseFloat(document.getElementById('itemCost').value),
-        minStock: parseInt(document.getElementById('itemMinStock').value)
+        pieces_per_carton: parseInt(document.getElementById('itemPiecesPerCarton').value) || 1,
+        price_piece: parseFloat(document.getElementById('itemPricePiece').value) || 0,
+        price_carton: parseFloat(document.getElementById('itemPriceCarton').value) || 0,
+        cost_piece: parseFloat(document.getElementById('itemCostPiece').value) || 0,
+        cost_carton: parseFloat(document.getElementById('itemCostCarton').value) || 0,
+        min_stock: parseInt(document.getElementById('itemMinStock').value) || 0
     };
     try {
         if (id) {
@@ -376,7 +351,7 @@ async function deleteItem(id) {
     }
 }
 
-// ==================== المبيعات ====================
+// ==================== المبيعات (مع دعم الكرتونة/قطعة) ====================
 function addSellItem() {
     const container = document.getElementById('sellItems');
     const index = sellItems.length;
@@ -385,31 +360,47 @@ function addSellItem() {
     div.innerHTML = `
         <select onchange="updateSellItem(${index})" id="sell-item-${index}">
             <option value="">اختر صنف...</option>
-            ${items.map(i => `<option value="${i.id}" data-price="${i.price}">${i.name} (${i.price} ج.س)</option>`).join('')}
+            ${items.map(i => {
+                const pricePiece = i.price_piece || 0;
+                const priceCarton = i.price_carton || 0;
+                return `<option value="${i.id}" data-price-piece="${pricePiece}" data-price-carton="${priceCarton}" data-pieces="${i.pieces_per_carton || 1}">${i.name} (قطعة: ${pricePiece} | كرتونة: ${priceCarton})</option>`;
+            }).join('')}
         </select>
-        <input type="number" placeholder="الكمية" onchange="updateSellItem(${index})" id="sell-qty-${index}">
+        <select onchange="updateSellItem(${index})" id="sell-unit-${index}">
+            <option value="piece">قطعة</option>
+            <option value="carton">كرتونة</option>
+        </select>
+        <input type="number" placeholder="الكمية" onchange="updateSellItem(${index})" id="sell-qty-${index}" min="1">
         <span>الإجمالي: <span id="sell-total-${index}">0</span></span>
         <button onclick="removeSellItem(${index})"><i class="fas fa-times"></i></button>
     `;
     container.appendChild(div);
-    sellItems.push({ index, id: null, qty: 0, price: 0 });
+    sellItems.push({ index, id: null, unit: 'piece', qty: 0, price: 0, total: 0, piecesPerCarton: 1 });
 }
 
 function updateSellItem(index) {
     const select = document.getElementById(`sell-item-${index}`);
+    const unitSelect = document.getElementById(`sell-unit-${index}`);
     const qtyInput = document.getElementById(`sell-qty-${index}`);
     const totalSpan = document.getElementById(`sell-total-${index}`);
+
     const option = select.options[select.selectedIndex];
-    if (option.value) {
-        const price = parseFloat(option.dataset.price);
-        const qty = parseInt(qtyInput.value) || 0;
-        const total = price * qty;
-        totalSpan.innerText = total;
-        sellItems[index] = { index, id: parseInt(option.value), qty, price, total };
-    } else {
+    if (!option.value) {
         totalSpan.innerText = 0;
-        sellItems[index] = { index, id: null, qty: 0, price: 0, total: 0 };
+        sellItems[index] = { index, id: null, unit: 'piece', qty: 0, price: 0, total: 0, piecesPerCarton: 1 };
+        calculateSellTotal();
+        return;
     }
+
+    const id = parseInt(option.value);
+    const unit = unitSelect.value;
+    const qty = parseInt(qtyInput.value) || 0;
+    const price = unit === 'piece' ? parseFloat(option.dataset.pricePiece) : parseFloat(option.dataset.priceCarton);
+    const piecesPerCarton = parseInt(option.dataset.pieces) || 1;
+    const total = price * qty;
+
+    totalSpan.innerText = total;
+    sellItems[index] = { index, id, unit, qty, price, total, piecesPerCarton };
     calculateSellTotal();
 }
 
@@ -426,6 +417,8 @@ function removeSellItem(index) {
     itemsDivs.forEach((div, i) => {
         div.querySelector('select').id = `sell-item-${i}`;
         div.querySelector('select').setAttribute('onchange', `updateSellItem(${i})`);
+        div.querySelector('select:nth-of-type(2)').id = `sell-unit-${i}`;
+        div.querySelector('select:nth-of-type(2)').setAttribute('onchange', `updateSellItem(${i})`);
         div.querySelector('input').id = `sell-qty-${i}`;
         div.querySelector('input').setAttribute('onchange', `updateSellItem(${i})`);
         div.querySelector('span span').id = `sell-total-${i}`;
@@ -439,13 +432,41 @@ async function submitSell() {
         alert('أضف أصناف للبيع');
         return;
     }
-    const total = itemsToSell.reduce((sum, i) => sum + i.total, 0);
+
+    // حساب إجمالي المبلغ والربح
+    let totalAmount = 0;
+    let totalProfit = 0;
+    const saleItems = [];
+
+    for (const item of itemsToSell) {
+        const dbItem = items.find(i => i.id === item.id);
+        if (!dbItem) continue;
+
+        const qtyInPieces = item.unit === 'carton' ? item.qty * item.piecesPerCarton : item.qty;
+        const cost = item.unit === 'carton' ? (dbItem.cost_carton || 0) : (dbItem.cost_piece || 0);
+        const itemTotal = item.total;
+        const itemProfit = itemTotal - (cost * (item.unit === 'carton' ? item.qty : qtyInPieces));
+
+        totalAmount += itemTotal;
+        totalProfit += itemProfit;
+        saleItems.push({
+            id: item.id,
+            qty: qtyInPieces,
+            price: item.price,
+            total: itemTotal,
+            profit: itemProfit
+        });
+    }
+
     const paymentMethod = document.getElementById('paymentMethod').value;
+    const confirmMsg = `المبلغ الإجمالي: ${totalAmount} ج.س\nالربح المتوقع: ${totalProfit} ج.س\nهل تريد تأكيد البيع؟`;
+    if (!confirm(confirmMsg)) return;
+
     try {
         const res = await fetch('/api/sales', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ items: itemsToSell, total, paymentMethod })
+            body: JSON.stringify({ items: saleItems, total: totalAmount, paymentMethod })
         });
         const data = await res.json();
         if (res.ok) {
@@ -458,6 +479,7 @@ async function submitSell() {
             await loadProfit();
             await loadReports();
             await loadLowStock();
+            await loadSalesList();
         } else {
             alert(data.error);
         }
@@ -466,7 +488,7 @@ async function submitSell() {
     }
 }
 
-// ==================== المشتريات ====================
+// ==================== المشتريات (مع دعم الكرتونة/قطعة) ====================
 function addBuyItem() {
     const container = document.getElementById('buyItems');
     const index = buyItems.length;
@@ -475,31 +497,47 @@ function addBuyItem() {
     div.innerHTML = `
         <select onchange="updateBuyItem(${index})" id="buy-item-${index}">
             <option value="">اختر صنف...</option>
-            ${items.map(i => `<option value="${i.id}" data-price="${i.cost || 0}">${i.name} (${i.cost || 0} ج.س)</option>`).join('')}
+            ${items.map(i => {
+                const costPiece = i.cost_piece || 0;
+                const costCarton = i.cost_carton || 0;
+                return `<option value="${i.id}" data-cost-piece="${costPiece}" data-cost-carton="${costCarton}" data-pieces="${i.pieces_per_carton || 1}">${i.name} (قطعة: ${costPiece} | كرتونة: ${costCarton})</option>`;
+            }).join('')}
         </select>
-        <input type="number" placeholder="الكمية" onchange="updateBuyItem(${index})" id="buy-qty-${index}">
+        <select onchange="updateBuyItem(${index})" id="buy-unit-${index}">
+            <option value="piece">قطعة</option>
+            <option value="carton">كرتونة</option>
+        </select>
+        <input type="number" placeholder="الكمية" onchange="updateBuyItem(${index})" id="buy-qty-${index}" min="1">
         <span>الإجمالي: <span id="buy-total-${index}">0</span></span>
         <button onclick="removeBuyItem(${index})"><i class="fas fa-times"></i></button>
     `;
     container.appendChild(div);
-    buyItems.push({ index, id: null, qty: 0, price: 0 });
+    buyItems.push({ index, id: null, unit: 'piece', qty: 0, price: 0, total: 0, piecesPerCarton: 1 });
 }
 
 function updateBuyItem(index) {
     const select = document.getElementById(`buy-item-${index}`);
+    const unitSelect = document.getElementById(`buy-unit-${index}`);
     const qtyInput = document.getElementById(`buy-qty-${index}`);
     const totalSpan = document.getElementById(`buy-total-${index}`);
+
     const option = select.options[select.selectedIndex];
-    if (option.value) {
-        const price = parseFloat(option.dataset.price);
-        const qty = parseInt(qtyInput.value) || 0;
-        const total = price * qty;
-        totalSpan.innerText = total;
-        buyItems[index] = { index, id: parseInt(option.value), qty, price, total };
-    } else {
+    if (!option.value) {
         totalSpan.innerText = 0;
-        buyItems[index] = { index, id: null, qty: 0, price: 0, total: 0 };
+        buyItems[index] = { index, id: null, unit: 'piece', qty: 0, price: 0, total: 0, piecesPerCarton: 1 };
+        calculateBuyTotal();
+        return;
     }
+
+    const id = parseInt(option.value);
+    const unit = unitSelect.value;
+    const qty = parseInt(qtyInput.value) || 0;
+    const price = unit === 'piece' ? parseFloat(option.dataset.costPiece) : parseFloat(option.dataset.costCarton);
+    const piecesPerCarton = parseInt(option.dataset.pieces) || 1;
+    const total = price * qty;
+
+    totalSpan.innerText = total;
+    buyItems[index] = { index, id, unit, qty, price, total, piecesPerCarton };
     calculateBuyTotal();
 }
 
@@ -516,6 +554,8 @@ function removeBuyItem(index) {
     itemsDivs.forEach((div, i) => {
         div.querySelector('select').id = `buy-item-${i}`;
         div.querySelector('select').setAttribute('onchange', `updateBuyItem(${i})`);
+        div.querySelector('select:nth-of-type(2)').id = `buy-unit-${i}`;
+        div.querySelector('select:nth-of-type(2)').setAttribute('onchange', `updateBuyItem(${i})`);
         div.querySelector('input').id = `buy-qty-${i}`;
         div.querySelector('input').setAttribute('onchange', `updateBuyItem(${i})`);
         div.querySelector('span span').id = `buy-total-${i}`;
@@ -529,12 +569,26 @@ async function submitBuy() {
         alert('أضف أصناف للشراء');
         return;
     }
-    const total = itemsToBuy.reduce((sum, i) => sum + i.total, 0);
+
+    let totalAmount = 0;
+    const purchaseItems = [];
+
+    for (const item of itemsToBuy) {
+        const qtyInPieces = item.unit === 'carton' ? item.qty * item.piecesPerCarton : item.qty;
+        totalAmount += item.total;
+        purchaseItems.push({
+            id: item.id,
+            qty: qtyInPieces,
+            price: item.price,
+            total: item.total
+        });
+    }
+
     try {
         const res = await fetch('/api/purchases', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ items: itemsToBuy, total })
+            body: JSON.stringify({ items: purchaseItems, total: totalAmount })
         });
         const data = await res.json();
         if (res.ok) {
@@ -547,11 +601,121 @@ async function submitBuy() {
             await loadProfit();
             await loadReports();
             await loadLowStock();
+            await loadPurchasesList();
         } else {
             alert(data.error);
         }
     } catch (error) {
         alert('فشل الاتصال');
+    }
+}
+
+// ==================== سجل المبيعات مع إمكانية الحذف والتعديل ====================
+async function loadSalesList() {
+    try {
+        const res = await fetch('/api/sales/all');
+        if (!res.ok) throw new Error('فشل تحميل المبيعات');
+        sales = await res.json();
+        const tbody = document.getElementById('salesBody');
+        tbody.innerHTML = sales.map(s => `
+            <tr>
+                <td data-label="التاريخ">${new Date(s.date).toLocaleString('ar-EG')}</td>
+                <td data-label="المبلغ">${s.total}</td>
+                <td data-label="طريقة الدفع">${s.payment_method === 'bank' ? 'بنكك' : s.payment_method === 'cash' ? 'كاش' : 'فوري'}</td>
+                <td data-label="الربح">${s.profit || 0}</td>
+                <td data-label="إجراءات">
+                    <button class="btn btn-warning btn-sm" onclick="editSale(${s.id})"><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteSale(${s.id})"><i class="fas fa-trash"></i></button>
+                </td>
+            </tr>
+        `).join('');
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+async function editSale(id) {
+    const sale = sales.find(s => s.id === id);
+    if (!sale) return;
+    const newMethod = prompt('تغيير طريقة الدفع (bank/cash/fawry):', sale.payment_method);
+    if (!newMethod) return;
+    try {
+        const res = await fetch(`/api/sales/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ paymentMethod: newMethod })
+        });
+        if (res.ok) {
+            alert('تم التحديث');
+            await loadSalesList();
+            await loadDashboard();
+            await loadProfit();
+        } else {
+            alert('فشل التحديث');
+        }
+    } catch (error) {
+        alert('خطأ في الاتصال');
+    }
+}
+
+async function deleteSale(id) {
+    if (!confirm('هل أنت متأكد من حذف هذه المبيعة؟')) return;
+    try {
+        const res = await fetch(`/api/sales/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+            alert('تم الحذف');
+            await loadSalesList();
+            await loadItems();
+            await loadDashboard();
+            await loadProfit();
+            await loadReports();
+            await loadLowStock();
+        } else {
+            alert('فشل الحذف');
+        }
+    } catch (error) {
+        alert('خطأ في الاتصال');
+    }
+}
+
+// ==================== سجل المشتريات مع إمكانية الحذف ====================
+async function loadPurchasesList() {
+    try {
+        const res = await fetch('/api/purchases/all');
+        if (!res.ok) throw new Error('فشل تحميل المشتريات');
+        purchases = await res.json();
+        const tbody = document.getElementById('purchasesBody');
+        tbody.innerHTML = purchases.map(p => `
+            <tr>
+                <td data-label="التاريخ">${new Date(p.date).toLocaleString('ar-EG')}</td>
+                <td data-label="المبلغ">${p.total}</td>
+                <td data-label="إجراءات">
+                    <button class="btn btn-danger btn-sm" onclick="deletePurchase(${p.id})"><i class="fas fa-trash"></i></button>
+                </td>
+            </tr>
+        `).join('');
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+async function deletePurchase(id) {
+    if (!confirm('هل أنت متأكد من حذف هذه العملية؟')) return;
+    try {
+        const res = await fetch(`/api/purchases/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+            alert('تم الحذف');
+            await loadPurchasesList();
+            await loadItems();
+            await loadDashboard();
+            await loadProfit();
+            await loadReports();
+            await loadLowStock();
+        } else {
+            alert('فشل الحذف');
+        }
+    } catch (error) {
+        alert('خطأ في الاتصال');
     }
 }
 
@@ -565,11 +729,11 @@ async function loadShipments() {
         tbody.innerHTML = shipments.map(s => `
             <tr>
                 <td data-label="التاريخ">${new Date(s.date).toLocaleString('ar-EG')}</td>
-                <td data-label="الاسم">${s.personName}</td>
+                <td data-label="الاسم">${s.person_name}</td>
                 <td data-label="المنطقة">${s.region}</td>
-                <td data-label="القطعة">${s.itemDescription}</td>
-                <td data-label="سعر القطعة">${s.itemPrice}</td>
-                <td data-label="أتعابي">${s.myFee}</td>
+                <td data-label="القطعة">${s.item_description}</td>
+                <td data-label="سعر القطعة">${s.item_price}</td>
+                <td data-label="أتعابي">${s.my_fee}</td>
                 <td data-label="الإجمالي">${s.total}</td>
                 <td data-label="الحالة"><span class="status ${s.status}">${s.status === 'pending' ? 'قيد التنفيذ' : 'مكتملة'}</span></td>
                 <td data-label="إجراءات">
@@ -595,11 +759,11 @@ function editShipment(id) {
     if (!shipment) return;
     document.getElementById('shipmentModalTitle').innerText = 'تعديل إرسالية';
     document.getElementById('shipmentId').value = shipment.id;
-    document.getElementById('shipmentPersonName').value = shipment.personName;
+    document.getElementById('shipmentPersonName').value = shipment.person_name;
     document.getElementById('shipmentRegion').value = shipment.region;
-    document.getElementById('shipmentItemDescription').value = shipment.itemDescription;
-    document.getElementById('shipmentItemPrice').value = shipment.itemPrice;
-    document.getElementById('shipmentMyFee').value = shipment.myFee;
+    document.getElementById('shipmentItemDescription').value = shipment.item_description;
+    document.getElementById('shipmentItemPrice').value = shipment.item_price;
+    document.getElementById('shipmentMyFee').value = shipment.my_fee;
     document.getElementById('shipmentStatus').value = shipment.status;
     document.getElementById('shipmentModal').style.display = 'flex';
 }
@@ -680,7 +844,7 @@ async function showSalesDetails() {
             <tr>
                 <td>${new Date(s.date).toLocaleString('ar-EG')}</td>
                 <td>${s.total}</td>
-                <td>${s.paymentMethod === 'bank' ? 'بنكك' : s.paymentMethod === 'cash' ? 'كاش' : 'فوري'}</td>
+                <td>${s.payment_method === 'bank' ? 'بنكك' : s.payment_method === 'cash' ? 'كاش' : 'فوري'}</td>
                 <td>${s.profit || 0}</td>
             </tr>
         `).join('');
@@ -712,7 +876,7 @@ async function showPurchasesDetails() {
     }
 }
 
-// ==================== تحميل لوحة التحكم ====================
+// ==================== تحميل لوحة التحكم (بدون مبيعات اليوم/الشهر) ====================
 async function loadDashboard() {
     try {
         const res = await fetch('/api/financial-summary');
@@ -733,16 +897,6 @@ async function loadDashboard() {
                 <i class="fas fa-chart-line"></i>
                 <div class="stat-value">${data.totalProfit}</div>
                 <div class="stat-label">إجمالي الأرباح</div>
-            </div>
-            <div class="stat-card">
-                <i class="fas fa-calendar-day"></i>
-                <div class="stat-value">${data.todaySales}</div>
-                <div class="stat-label">مبيعات اليوم</div>
-            </div>
-            <div class="stat-card">
-                <i class="fas fa-calendar-alt"></i>
-                <div class="stat-value">${data.monthSales}</div>
-                <div class="stat-label">مبيعات الشهر</div>
             </div>
         `;
 
@@ -769,15 +923,15 @@ async function loadDashboard() {
                 maintainAspectRatio: false,
                 plugins: {
                     legend: { position: 'top' },
-                    title: { display: true, text: 'المبيعات الشهرية الفعلية' }
+                    title: { display: true, text: 'المبيعات الشهرية' }
                 }
             }
         });
 
-        const lowStock = items.filter(i => i.quantity <= i.minStock);
+        const lowStock = items.filter(i => i.quantity <= i.min_stock);
         const lowTbody = document.querySelector('#dashboardLowStockTable tbody');
         lowTbody.innerHTML = lowStock.map(i => `
-            <tr><td data-label="الاسم">${i.name}</td><td data-label="الكمية">${i.quantity}</td><td data-label="أقل كمية للإنذار">${i.minStock}</td></tr>
+            <tr><td data-label="الاسم">${i.name}</td><td data-label="الكمية">${i.quantity}</td><td data-label="أقل كمية">${i.min_stock}</td></tr>
         `).join('');
     } catch (error) {
         console.error(error);
@@ -837,14 +991,14 @@ async function loadProfit() {
 
 // ==================== تحميل صفحة المخزون المنخفض ====================
 async function loadLowStock() {
-    const lowStock = items.filter(i => i.quantity <= i.minStock);
+    const lowStock = items.filter(i => i.quantity <= i.min_stock);
     const tbody = document.querySelector('#lowstockFullTable tbody');
     if (!tbody) return;
     tbody.innerHTML = lowStock.map(i => `
         <tr>
             <td data-label="الاسم">${i.name}</td>
             <td data-label="الكمية">${i.quantity}</td>
-            <td data-label="أقل كمية للإنذار">${i.minStock}</td>
+            <td data-label="أقل كمية">${i.min_stock}</td>
         </tr>
     `).join('');
 }
@@ -871,15 +1025,15 @@ async function loadReports() {
                 <div class="stat-value">${data.totalProfit}</div>
                 <div class="stat-label">إجمالي الأرباح</div>
             </div>
-            <div class="stat-card">
-                <i class="fas fa-calendar-day"></i>
-                <div class="stat-value">${data.todaySales}</div>
-                <div class="stat-label">مبيعات اليوم</div>
+            <div class="stat-card" onclick="showSection('salesList')">
+                <i class="fas fa-list"></i>
+                <div class="stat-value">عرض</div>
+                <div class="stat-label">سجل المبيعات</div>
             </div>
-            <div class="stat-card">
-                <i class="fas fa-calendar-alt"></i>
-                <div class="stat-value">${data.monthSales}</div>
-                <div class="stat-label">مبيعات الشهر</div>
+            <div class="stat-card" onclick="showSection('purchasesList')">
+                <i class="fas fa-list"></i>
+                <div class="stat-value">عرض</div>
+                <div class="stat-label">سجل المشتريات</div>
             </div>
         `;
     } catch (error) {
@@ -931,7 +1085,7 @@ function printSection(sectionId) {
     const section = document.getElementById(sectionId);
     if (!section) return;
 
-    const title = section.querySelector('h2')?.innerText || 'تقرير';
+    const title = section.querySelector('h2')?.innerText || document.getElementById('headerTitle').innerText;
     const printWindow = window.open('', '_blank');
     printWindow.document.write('<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8"><title>' + title + '</title>');
 

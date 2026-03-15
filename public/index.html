@@ -18,11 +18,11 @@
             </div>
             <form id="loginForm">
                 <div class="form-group">
-                    <!-- <label><i class="fas fa-user"></i> اسم المستخدم</label> -->
+                    <label><i class="fas fa-user"></i> اسم المستخدم</label>
                     <input type="text" id="username" value="عاصم عبدالله ود كمون" readonly>
                 </div>
                 <div class="form-group">
-                    <!-- <label><i class="fas fa-lock"></i> كلمة المرور</label> -->
+                    <label><i class="fas fa-lock"></i> كلمة المرور</label>
                     <input type="password" id="password" placeholder="أدخل كلمة المرور" required>
                 </div>
                 <button type="submit" class="btn btn-primary btn-block">دخول</button>
@@ -40,7 +40,7 @@
             <button onclick="hideNotification()"><i class="fas fa-times"></i></button>
         </div>
 
-        <!-- الهيدر العلوي الموحد -->
+        <!-- الهيدر العلوي -->
         <div class="app-header">
             <div class="header-right">
                 <div class="toggle-sidebar-btn" onclick="toggleSidebar()">
@@ -59,7 +59,7 @@
             </div>
         </div>
 
-        <!-- القائمة الجانبية (بدون أيقونة السيارة) -->
+        <!-- القائمة الجانبية -->
         <div class="sidebar">
             <div class="sidebar-header">
                 <h3>عاصم ود كمون</h3>
@@ -101,14 +101,12 @@
                     <i class="fas fa-key"></i>
                     <span>تغيير كلمة المرور</span>
                 </li>
-                <!-- تم إزالة عنصر الخروج من القائمة الجانبية لأنه موجود في الهيدر -->
             </ul>
         </div>
 
         <div class="main-content">
             <!-- الصفحة الرئيسية -->
             <div id="dashboardSection" class="section active">
-                <h2>الرئيسية</h2>
                 <div class="stats-grid" id="dashboardStats"></div>
                 <div class="chart-container">
                     <canvas id="dashboardChart"></canvas>
@@ -128,16 +126,25 @@
 
             <!-- إدارة الأصناف -->
             <div id="itemsSection" class="section">
-                <h2>إدارة الأصناف</h2>
                 <div class="action-bar">
                     <button class="btn btn-primary" onclick="showAddItemModal()"><i class="fas fa-plus"></i> إضافة صنف</button>
-                    <input type="text" id="searchItem" placeholder="بحث بالاسم..." onkeyup="loadItems()">
+                    <!-- <input type="text" id="searchItem" placeholder="بحث بالاسم..." onkeyup="loadItems()"> -->
                     <button class="btn btn-secondary" onclick="printSection('itemsSection')"><i class="fas fa-print"></i> طباعة</button>
                 </div>
                 <div class="table-responsive">
                     <table>
                         <thead>
-                            <tr><th>الاسم</th><th>الكمية</th><th>سعر البيع</th><th>سعر الشراء</th><th>أقل كمية للإنذار</th><th>إجراءات</th></tr>
+                            <tr>
+                                <th>الاسم</th>
+                                <th>الكمية (قطعة)</th>
+                                <th>عدد القطع/كرتونة</th>
+                                <th>سعر القطعة</th>
+                                <th>سعر الكرتونة</th>
+                                <th>تكلفة القطعة</th>
+                                <th>تكلفة الكرتونة</th>
+                                <th>أقل كمية</th>
+                                <th>إجراءات</th>
+                            </tr>
                         </thead>
                         <tbody id="itemsBody"></tbody>
                     </table>
@@ -146,7 +153,6 @@
 
             <!-- بيع -->
             <div id="sellSection" class="section">
-                <h2>تسجيل عملية بيع</h2>
                 <div id="sellItems"></div>
                 <button class="btn btn-secondary" onclick="addSellItem()"><i class="fas fa-plus"></i> إضافة صنف</button>
                 <div class="form-group">
@@ -164,7 +170,6 @@
 
             <!-- شراء -->
             <div id="buySection" class="section">
-                <h2>تسجيل عملية شراء</h2>
                 <div id="buyItems"></div>
                 <button class="btn btn-secondary" onclick="addBuyItem()"><i class="fas fa-plus"></i> إضافة صنف</button>
                 <div class="total">الإجمالي: <span id="buyTotal">0</span> ج.س</div>
@@ -174,7 +179,6 @@
 
             <!-- صفحة الأرباح -->
             <div id="profitSection" class="section">
-                <h2>الأرباح</h2>
                 <div class="stats-grid" id="profitStats"></div>
                 <div class="chart-container">
                     <canvas id="profitChart"></canvas>
@@ -184,7 +188,6 @@
 
             <!-- صفحة المخزون المنخفض -->
             <div id="lowstockSection" class="section">
-                <h2>المخزون المنخفض</h2>
                 <div class="report-section">
                     <div class="table-responsive">
                         <table id="lowstockFullTable">
@@ -200,7 +203,6 @@
 
             <!-- صفحة الإرساليات -->
             <div id="shipmentsSection" class="section">
-                <h2>الإرساليات</h2>
                 <button class="btn btn-primary" onclick="showAddShipmentModal()"><i class="fas fa-plus"></i> إضافة إرسالية</button>
                 <div class="table-responsive">
                     <table id="shipmentsTable">
@@ -225,9 +227,44 @@
 
             <!-- صفحة التقارير -->
             <div id="reportsSection" class="section">
-                <h2>التقارير المالية</h2>
                 <div class="stats-grid" id="reportsStats"></div>
                 <button class="btn btn-secondary" onclick="printSection('reportsSection')"><i class="fas fa-print"></i> طباعة</button>
+            </div>
+
+            <!-- سجل المبيعات -->
+            <div id="salesListSection" class="section">
+                <div class="table-responsive">
+                    <table id="salesTable">
+                        <thead>
+                            <tr>
+                                <th>التاريخ</th>
+                                <th>المبلغ</th>
+                                <th>طريقة الدفع</th>
+                                <th>الربح</th>
+                                <th>إجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="salesBody"></tbody>
+                    </table>
+                </div>
+                <button class="btn btn-secondary" onclick="printSection('salesListSection')"><i class="fas fa-print"></i> طباعة</button>
+            </div>
+
+            <!-- سجل المشتريات -->
+            <div id="purchasesListSection" class="section">
+                <div class="table-responsive">
+                    <table id="purchasesTable">
+                        <thead>
+                            <tr>
+                                <th>التاريخ</th>
+                                <th>المبلغ</th>
+                                <th>إجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="purchasesBody"></tbody>
+                    </table>
+                </div>
+                <button class="btn btn-secondary" onclick="printSection('purchasesListSection')"><i class="fas fa-print"></i> طباعة</button>
             </div>
         </div>
     </div>
@@ -258,20 +295,32 @@
                     <input type="text" id="itemName" required>
                 </div>
                 <div class="form-group">
-                    <label>الكمية</label>
-                    <input type="text" id="itemQuantity" required>
+                    <label>الكمية (قطعة او كرتونة)</label>
+                    <input type="number" id="itemQuantity" required>
                 </div>
                 <div class="form-group">
-                    <label>سعر البيع</label>
-                    <input type="text" step="0.01" id="itemPrice" required>
+                    <label>عدد القطع </label>
+                    <input type="number" id="itemPiecesPerCarton" value="1" min="1">
                 </div>
                 <div class="form-group">
-                    <label>سعر الشراء (التكلفة)</label>
-                    <input type="text" step="0.01" id="itemCost" value="0">
+                    <label>سعر بيع القطعة</label>
+                    <input type="number" step="0.01" id="itemPricePiece">
+                </div>
+                <div class="form-group">
+                    <label>سعر بيع الكرتونة</label>
+                    <input type="number" step="0.01" id="itemPriceCarton">
+                </div>
+                <div class="form-group">
+                    <label>تكلفة شراء القطعة</label>
+                    <input type="number" step="0.01" id="itemCostPiece">
+                </div>
+                <div class="form-group">
+                    <label>تكلفة شراء الكرتونة</label>
+                    <input type="number" step="0.01" id="itemCostCarton">
                 </div>
                 <div class="form-group">
                     <label>أقل كمية للإنذار</label>
-                    <input type="text" id="itemMinStock" value="0">
+                    <input type="number" id="itemMinStock" value="0">
                 </div>
                 <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> حفظ</button>
             </form>

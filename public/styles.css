@@ -10,7 +10,7 @@ body {
     direction: rtl;
 }
 
-/* ===== شاشة تسجيل الدخول (لون سماوي متدرج) ===== */
+/* ===== شاشة تسجيل الدخول ===== */
 .login-container {
     display: flex;
     align-items: center;
@@ -131,7 +131,7 @@ body {
     padding-top: 15px;
 }
 
-/* ===== شريط التنبيهات (مُحسّن للهاتف) ===== */
+/* ===== شريط التنبيهات ===== */
 .notification-bar {
     position: fixed;
     top: 70px;
@@ -168,7 +168,7 @@ body {
     opacity: 1;
 }
 
-/* ===== الهيدر العلوي (مُحسّن) ===== */
+/* ===== الهيدر العلوي ===== */
 .app-header {
     position: fixed;
     top: 0;
@@ -205,7 +205,6 @@ body {
     white-space: nowrap;
 }
 
-/* زر القائمة الجانبية */
 .toggle-sidebar-btn {
     background: linear-gradient(135deg, #f39c12, #e67e22);
     color: white;
@@ -227,7 +226,6 @@ body {
     box-shadow: 0 8px 20px rgba(243, 156, 18, 0.6);
 }
 
-/* زر الرجوع */
 .back-btn {
     background: linear-gradient(135deg, #3498db, #2980b9);
     color: white;
@@ -255,7 +253,6 @@ body {
     box-shadow: 0 6px 15px rgba(52, 152, 219, 0.6);
 }
 
-/* زر تسجيل الخروج */
 .btn-logout {
     background: linear-gradient(135deg, #e74c3c, #c0392b);
     color: white;
@@ -278,7 +275,7 @@ body {
     box-shadow: 0 6px 15px rgba(231, 76, 60, 0.6);
 }
 
-/* ===== القائمة الجانبية (تصميم أساسي) ===== */
+/* ===== القائمة الجانبية ===== */
 .sidebar {
     position: fixed;
     top: 70px;
@@ -432,11 +429,9 @@ body {
     display: block;
 }
 
-h2 {
-    color: #2c3e50;
-    margin-bottom: 20px;
-    border-bottom: 2px solid #f39c12;
-    padding-bottom: 10px;
+/* إزالة جميع عناوين h2 داخل الأقسام (لأن العنوان موجود في الهيدر) */
+.section h2 {
+    display: none;
 }
 
 /* ===== البطاقات الإحصائية ===== */
@@ -615,7 +610,7 @@ h2 {
     margin: 4px 2px;
 }
 
-/* ===== الجداول (محسنة للهاتف) ===== */
+/* ===== الجداول ===== */
 .table-responsive {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
@@ -629,7 +624,7 @@ table {
     width: 100%;
     background: white;
     border-collapse: collapse;
-    min-width: 600px; /* يسمح بالتمرير الأفقي على الهاتف */
+    min-width: 600px;
 }
 
 th {
@@ -650,7 +645,6 @@ tr:hover {
     background: #f5f5f5;
 }
 
-/* تحويل الجدول إلى بطاقات على الهاتف */
 @media (max-width: 768px) {
     table {
         min-width: 100%;
@@ -770,7 +764,7 @@ input:focus, select:focus {
     transform: rotate(90deg);
 }
 
-/* ===== عناصر البيع والشراء (محسنة للهاتف) ===== */
+/* ===== عناصر البيع والشراء ===== */
 .sell-item, .buy-item {
     display: flex;
     gap: 10px;
@@ -833,7 +827,7 @@ input:focus, select:focus {
     text-shadow: 0 2px 5px rgba(39, 174, 96, 0.2);
 }
 
-/* ===== شريط الإجراءات (محسن للهاتف) ===== */
+/* ===== شريط الإجراءات ===== */
 .action-bar {
     display: flex;
     gap: 10px;
@@ -879,19 +873,19 @@ input:focus, select:focus {
     color: white;
 }
 
-/* ===== تحسينات الهاتف المتقدمة للقائمة الجانبية ===== */
+/* ===== تحسينات الهاتف ===== */
 @media (max-width: 768px) {
     .sidebar {
-        right: -100%; /* مخفية خارج الشاشة */
-        width: 280px; /* عرض مناسب */
+        right: -100%;
+        width: 280px;
         transition: right 0.3s ease;
         box-shadow: 2px 0 10px rgba(0,0,0,0.2);
     }
     .sidebar.show {
-        right: 0; /* تظهر عند الضغط */
+        right: 0;
     }
     .sidebar.collapsed {
-        width: 280px; /* لا نستخدم التصغير على الهاتف */
+        width: 280px;
     }
     .sidebar.collapsed .sidebar-header h3,
     .sidebar.collapsed .sidebar-menu li span {
@@ -908,7 +902,6 @@ input:focus, select:focus {
     .main-content {
         margin-right: 0;
     }
-    /* إضافة طبقة تعتيم عند فتح القائمة */
     .sidebar-overlay {
         display: none;
         position: fixed;
@@ -922,20 +915,14 @@ input:focus, select:focus {
     .sidebar-overlay.show {
         display: block;
     }
-    /* تحسين زر الرجوع */
     .back-btn {
         padding: 6px 12px;
         font-size: 0.9rem;
     }
-    /* تحسين شريط التنبيهات */
     .notification-bar {
         top: 60px;
         padding: 10px 15px;
     }
-    .notification-bar span {
-        font-size: 0.9rem;
-    }
-    /* تحسين البطاقات */
     .stats-grid {
         grid-template-columns: 1fr 1fr;
         gap: 10px;
@@ -952,12 +939,10 @@ input:focus, select:focus {
     .stat-card i {
         font-size: 2rem;
     }
-    /* تحسين الرسوم البيانية */
     .chart-container {
         height: 200px;
         padding: 10px;
     }
-    /* تحسين عناصر البيع والشراء */
     .sell-item, .buy-item {
         flex-direction: column;
         align-items: stretch;
@@ -974,7 +959,6 @@ input:focus, select:focus {
     .total {
         font-size: 1.5rem;
     }
-    /* تحسين النوافذ المنبثقة */
     .modal-content {
         padding: 20px;
         max-width: 95%;
