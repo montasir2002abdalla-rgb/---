@@ -7,7 +7,7 @@ let sales = [];
 let purchases = [];
 let dashboardChart, profitChart;
 
-// ==================== استعادة الجلسة عند تحميل الصفحة ====================
+// ==================== استعادة الجلسة ====================
 window.addEventListener('load', async function() {
     const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true' || localStorage.getItem('authToken');
     
@@ -120,7 +120,7 @@ function logout() {
     document.getElementById('password').value = '';
 }
 
-// ==================== التنقل بين الأقسام ====================
+// ==================== التنقل ====================
 function goBack() {
     showSection('dashboard');
     closeSidebarOnMobile();
@@ -152,21 +152,18 @@ function showSection(section, save = true) {
         profit: 'الأرباح',
         lowstock: 'المخزون المنخفض',
         shipments: 'الإرساليات',
-        reports: 'التقارير المالية',
+        reports: 'التقارير',
         salesList: 'سجل المبيعات',
         purchasesList: 'سجل المشتريات'
     };
-
     document.getElementById('headerTitle').innerText = titleMap[section] || 'الرئيسية';
 
     const backButton = document.getElementById('backButton');
     backButton.style.display = (section === 'dashboard') ? 'none' : 'inline-flex';
 
     if (save) localStorage.setItem('currentSection', section);
-
     closeSidebarOnMobile();
 
-    // تفعيل القسم المناسب
     if (section === 'dashboard') {
         document.querySelector('.sidebar-menu li:nth-child(1)').classList.add('active');
         document.getElementById('dashboardSection').classList.add('active');
@@ -206,7 +203,7 @@ function showSection(section, save = true) {
     }
 }
 
-// ==================== طي القائمة الجانبية ====================
+// ==================== القائمة الجانبية (مثل السابق) ====================
 function toggleSidebar() {
     const sidebar = document.querySelector('.sidebar');
     const overlay = document.querySelector('.sidebar-overlay');
@@ -262,7 +259,7 @@ window.addEventListener('resize', function() {
     }
 });
 
-// ==================== الأصناف ====================
+// ==================== الأصناف (مبسطة) ====================
 async function loadItems() {
     const search = document.getElementById('searchItem')?.value || '';
     try {
@@ -274,13 +271,10 @@ async function loadItems() {
         tbody.innerHTML = filtered.map(item => `
             <tr>
                 <td data-label="الاسم">${item.name}</td>
-                <td data-label="الكمية (قطعة)">${item.quantity}</td>
-                <td data-label="قطع/كرتونة">${item.pieces_per_carton || 1}</td>
-                <td data-label="سعر القطعة">${item.price_piece || 0}</td>
-                <td data-label="سعر الكرتونة">${item.price_carton || 0}</td>
-                <td data-label="تكلفة القطعة">${item.cost_piece || 0}</td>
-                <td data-label="تكلفة الكرتونة">${item.cost_carton || 0}</td>
-                <td data-label="أقل كمية">${item.min_stock || 0}</td>
+                <td data-label="الكمية">${item.quantity}</td>
+                <td data-label="سعر البيع">${item.price}</td>
+                <td data-label="سعر الشراء">${item.cost}</td>
+                <td data-label="أقل كمية">${item.min_stock}</td>
                 <td data-label="إجراءات">
                     <button class="btn btn-warning btn-sm" onclick="editItem(${item.id})"><i class="fas fa-edit"></i></button>
                     <button class="btn btn-danger btn-sm" onclick="deleteItem(${item.id})"><i class="fas fa-trash"></i></button>
@@ -307,12 +301,9 @@ function editItem(id) {
     document.getElementById('itemId').value = item.id;
     document.getElementById('itemName').value = item.name;
     document.getElementById('itemQuantity').value = item.quantity;
-    document.getElementById('itemPiecesPerCarton').value = item.pieces_per_carton || 1;
-    document.getElementById('itemPricePiece').value = item.price_piece || 0;
-    document.getElementById('itemPriceCarton').value = item.price_carton || 0;
-    document.getElementById('itemCostPiece').value = item.cost_piece || 0;
-    document.getElementById('itemCostCarton').value = item.cost_carton || 0;
-    document.getElementById('itemMinStock').value = item.min_stock || 0;
+    document.getElementById('itemPrice').value = item.price;
+    document.getElementById('itemCost').value = item.cost;
+    document.getElementById('itemMinStock').value = item.min_stock;
     document.getElementById('itemModal').style.display = 'flex';
 }
 
@@ -326,11 +317,8 @@ document.getElementById('itemForm').addEventListener('submit', async (e) => {
     const item = {
         name: document.getElementById('itemName').value,
         quantity: parseInt(document.getElementById('itemQuantity').value) || 0,
-        pieces_per_carton: parseInt(document.getElementById('itemPiecesPerCarton').value) || 1,
-        price_piece: parseFloat(document.getElementById('itemPricePiece').value) || 0,
-        price_carton: parseFloat(document.getElementById('itemPriceCarton').value) || 0,
-        cost_piece: parseFloat(document.getElementById('itemCostPiece').value) || 0,
-        cost_carton: parseFloat(document.getElementById('itemCostCarton').value) || 0,
+        price: parseFloat(document.getElementById('itemPrice').value) || 0,
+        cost: parseFloat(document.getElementById('itemCost').value) || 0,
         min_stock: parseInt(document.getElementById('itemMinStock').value) || 0
     };
     try {
@@ -374,7 +362,7 @@ async function deleteItem(id) {
     }
 }
 
-// ==================== المبيعات (مع دعم الكرتونة/قطعة) ====================
+// ==================== المبيعات (مبسطة) ====================
 function addSellItem() {
     const container = document.getElementById('sellItems');
     const index = sellItems.length;
@@ -383,47 +371,36 @@ function addSellItem() {
     div.innerHTML = `
         <select onchange="updateSellItem(${index})" id="sell-item-${index}">
             <option value="">اختر صنف...</option>
-            ${items.map(i => {
-                const pricePiece = i.price_piece || 0;
-                const priceCarton = i.price_carton || 0;
-                return `<option value="${i.id}" data-price-piece="${pricePiece}" data-price-carton="${priceCarton}" data-pieces="${i.pieces_per_carton || 1}">${i.name} (قطعة: ${pricePiece} | كرتونة: ${priceCarton})</option>`;
-            }).join('')}
-        </select>
-        <select onchange="updateSellItem(${index})" id="sell-unit-${index}">
-            <option value="piece">قطعة</option>
-            <option value="carton">كرتونة</option>
+            ${items.map(i => `<option value="${i.id}" data-price="${i.price}">${i.name} (${i.price} ج.س)</option>`).join('')}
         </select>
         <input type="number" placeholder="الكمية" onchange="updateSellItem(${index})" id="sell-qty-${index}" min="1">
         <span>الإجمالي: <span id="sell-total-${index}">0</span></span>
         <button onclick="removeSellItem(${index})"><i class="fas fa-times"></i></button>
     `;
     container.appendChild(div);
-    sellItems.push({ index, id: null, unit: 'piece', qty: 0, price: 0, total: 0, piecesPerCarton: 1 });
+    sellItems.push({ index, id: null, qty: 0, price: 0, total: 0 });
 }
 
 function updateSellItem(index) {
     const select = document.getElementById(`sell-item-${index}`);
-    const unitSelect = document.getElementById(`sell-unit-${index}`);
     const qtyInput = document.getElementById(`sell-qty-${index}`);
     const totalSpan = document.getElementById(`sell-total-${index}`);
 
     const option = select.options[select.selectedIndex];
     if (!option.value) {
         totalSpan.innerText = 0;
-        sellItems[index] = { index, id: null, unit: 'piece', qty: 0, price: 0, total: 0, piecesPerCarton: 1 };
+        sellItems[index] = { index, id: null, qty: 0, price: 0, total: 0 };
         calculateSellTotal();
         return;
     }
 
     const id = parseInt(option.value);
-    const unit = unitSelect.value;
     const qty = parseInt(qtyInput.value) || 0;
-    const price = unit === 'piece' ? parseFloat(option.dataset.pricePiece) : parseFloat(option.dataset.priceCarton);
-    const piecesPerCarton = parseInt(option.dataset.pieces) || 1;
+    const price = parseFloat(option.dataset.price);
     const total = price * qty;
 
     totalSpan.innerText = total;
-    sellItems[index] = { index, id, unit, qty, price, total, piecesPerCarton };
+    sellItems[index] = { index, id, qty, price, total };
     calculateSellTotal();
 }
 
@@ -436,12 +413,9 @@ function removeSellItem(index) {
     const div = document.querySelectorAll('.sell-item')[index];
     if (div) div.remove();
     sellItems.splice(index, 1);
-    // إعادة ترقيم العناصر
     document.querySelectorAll('.sell-item').forEach((div, i) => {
         div.querySelector('select').id = `sell-item-${i}`;
         div.querySelector('select').setAttribute('onchange', `updateSellItem(${i})`);
-        div.querySelector('select:nth-of-type(2)').id = `sell-unit-${i}`;
-        div.querySelector('select:nth-of-type(2)').setAttribute('onchange', `updateSellItem(${i})`);
         div.querySelector('input').id = `sell-qty-${i}`;
         div.querySelector('input').setAttribute('onchange', `updateSellItem(${i})`);
         div.querySelector('span span').id = `sell-total-${i}`;
@@ -464,26 +438,14 @@ async function submitSell() {
         const dbItem = items.find(i => i.id === item.id);
         if (!dbItem) continue;
 
-        // تحويل الكمية إلى عدد القطع
-        const qtyInPieces = item.unit === 'carton' ? item.qty * item.piecesPerCarton : item.qty;
-        
-        // سعر التكلفة المناسب (قطعة أو كرتونة)
-        const costPerUnit = item.unit === 'carton' ? (dbItem.cost_carton || 0) : (dbItem.cost_piece || 0);
-        // التكلفة الإجمالية لهذا البند
-        const totalCost = item.unit === 'carton' ? (costPerUnit * item.qty) : (costPerUnit * qtyInPieces);
-        
-        const itemTotal = item.total;
-        const itemProfit = itemTotal - totalCost;
-
-        totalAmount += itemTotal;
+        const itemProfit = (item.price - dbItem.cost) * item.qty;
+        totalAmount += item.total;
         totalProfit += itemProfit;
-        
         saleItems.push({
             id: item.id,
-            qty: qtyInPieces,
-            price: item.price, // سعر الوحدة المباعة (قطعة أو كرتونة)
-            total: itemTotal,
-            profit: itemProfit
+            qty: item.qty,
+            price: item.price,
+            total: item.total
         });
     }
 
@@ -517,7 +479,7 @@ async function submitSell() {
     }
 }
 
-// ==================== المشتريات (مع دعم الكرتونة/قطعة) ====================
+// ==================== المشتريات (مبسطة) ====================
 function addBuyItem() {
     const container = document.getElementById('buyItems');
     const index = buyItems.length;
@@ -526,47 +488,36 @@ function addBuyItem() {
     div.innerHTML = `
         <select onchange="updateBuyItem(${index})" id="buy-item-${index}">
             <option value="">اختر صنف...</option>
-            ${items.map(i => {
-                const costPiece = i.cost_piece || 0;
-                const costCarton = i.cost_carton || 0;
-                return `<option value="${i.id}" data-cost-piece="${costPiece}" data-cost-carton="${costCarton}" data-pieces="${i.pieces_per_carton || 1}">${i.name} (قطعة: ${costPiece} | كرتونة: ${costCarton})</option>`;
-            }).join('')}
-        </select>
-        <select onchange="updateBuyItem(${index})" id="buy-unit-${index}">
-            <option value="piece">قطعة</option>
-            <option value="carton">كرتونة</option>
+            ${items.map(i => `<option value="${i.id}" data-cost="${i.cost}">${i.name} (${i.cost} ج.س)</option>`).join('')}
         </select>
         <input type="number" placeholder="الكمية" onchange="updateBuyItem(${index})" id="buy-qty-${index}" min="1">
         <span>الإجمالي: <span id="buy-total-${index}">0</span></span>
         <button onclick="removeBuyItem(${index})"><i class="fas fa-times"></i></button>
     `;
     container.appendChild(div);
-    buyItems.push({ index, id: null, unit: 'piece', qty: 0, price: 0, total: 0, piecesPerCarton: 1 });
+    buyItems.push({ index, id: null, qty: 0, price: 0, total: 0 });
 }
 
 function updateBuyItem(index) {
     const select = document.getElementById(`buy-item-${index}`);
-    const unitSelect = document.getElementById(`buy-unit-${index}`);
     const qtyInput = document.getElementById(`buy-qty-${index}`);
     const totalSpan = document.getElementById(`buy-total-${index}`);
 
     const option = select.options[select.selectedIndex];
     if (!option.value) {
         totalSpan.innerText = 0;
-        buyItems[index] = { index, id: null, unit: 'piece', qty: 0, price: 0, total: 0, piecesPerCarton: 1 };
+        buyItems[index] = { index, id: null, qty: 0, price: 0, total: 0 };
         calculateBuyTotal();
         return;
     }
 
     const id = parseInt(option.value);
-    const unit = unitSelect.value;
     const qty = parseInt(qtyInput.value) || 0;
-    const price = unit === 'piece' ? parseFloat(option.dataset.costPiece) : parseFloat(option.dataset.costCarton);
-    const piecesPerCarton = parseInt(option.dataset.pieces) || 1;
+    const price = parseFloat(option.dataset.cost);
     const total = price * qty;
 
     totalSpan.innerText = total;
-    buyItems[index] = { index, id, unit, qty, price, total, piecesPerCarton };
+    buyItems[index] = { index, id, qty, price, total };
     calculateBuyTotal();
 }
 
@@ -582,8 +533,6 @@ function removeBuyItem(index) {
     document.querySelectorAll('.buy-item').forEach((div, i) => {
         div.querySelector('select').id = `buy-item-${i}`;
         div.querySelector('select').setAttribute('onchange', `updateBuyItem(${i})`);
-        div.querySelector('select:nth-of-type(2)').id = `buy-unit-${i}`;
-        div.querySelector('select:nth-of-type(2)').setAttribute('onchange', `updateBuyItem(${i})`);
         div.querySelector('input').id = `buy-qty-${i}`;
         div.querySelector('input').setAttribute('onchange', `updateBuyItem(${i})`);
         div.querySelector('span span').id = `buy-total-${i}`;
@@ -602,12 +551,11 @@ async function submitBuy() {
     const purchaseItems = [];
 
     for (const item of itemsToBuy) {
-        const qtyInPieces = item.unit === 'carton' ? item.qty * item.piecesPerCarton : item.qty;
         totalAmount += item.total;
         purchaseItems.push({
             id: item.id,
-            qty: qtyInPieces,
-            price: item.price, // سعر الوحدة المشتراة (قطعة أو كرتونة)
+            qty: item.qty,
+            price: item.price,
             total: item.total
         });
     }
@@ -747,7 +695,7 @@ async function deletePurchase(id) {
     }
 }
 
-// ==================== الإرساليات ====================
+// ==================== الإرساليات (كما هي) ====================
 async function loadShipments() {
     try {
         const res = await fetch('/api/shipments');
@@ -904,7 +852,7 @@ async function showPurchasesDetails() {
     }
 }
 
-// ==================== تحميل لوحة التحكم (بدون مبيعات اليوم/الشهر) ====================
+// ==================== تحميل لوحة التحكم ====================
 async function loadDashboard() {
     try {
         const res = await fetch('/api/financial-summary');

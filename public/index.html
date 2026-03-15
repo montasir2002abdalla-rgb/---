@@ -18,11 +18,9 @@
             </div>
             <form id="loginForm">
                 <div class="form-group">
-                    <!-- <label><i class="fas fa-user"></i> اسم المستخدم</label> -->
                     <input type="text" id="username" value="عاصم عبدالله ود كمون" readonly>
                 </div>
                 <div class="form-group">
-                    <!-- <label><i class="fas fa-lock"></i> كلمة المرور</label> -->
                     <input type="password" id="password" placeholder="أدخل كلمة المرور" required>
                 </div>
                 <button type="submit" class="btn btn-primary btn-block">دخول</button>
@@ -136,12 +134,9 @@
                         <thead>
                             <tr>
                                 <th>الاسم</th>
-                                <th>الكمية (قطعة)</th>
-                                <th>قطع/كرتونة</th>
-                                <th>سعر القطعة</th>
-                                <th>سعر الكرتونة</th>
-                                <th>تكلفة القطعة</th>
-                                <th>تكلفة الكرتونة</th>
+                                <th>الكمية</th>
+                                <th>سعر البيع</th>
+                                <th>سعر الشراء</th>
                                 <th>أقل كمية</th>
                                 <th>إجراءات</th>
                             </tr>
@@ -283,7 +278,7 @@
         </div>
     </div>
 
-    <!-- Modal إضافة/تعديل صنف -->
+    <!-- Modal إضافة/تعديل صنف (مبسط) -->
     <div id="itemModal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeItemModal()">&times;</span>
@@ -295,31 +290,19 @@
                     <input type="text" id="itemName" required>
                 </div>
                 <div class="form-group">
-                    <label>الكمية (عدد القطع)</label>
+                    <label>الكمية</label>
                     <input type="number" id="itemQuantity" required>
                 </div>
                 <div class="form-group">
-                    <label>عدد القطع في الكرتونة</label>
-                    <input type="number" id="itemPiecesPerCarton" value="1" min="1">
+                    <label>سعر البيع</label>
+                    <input type="number" step="0.01" id="itemPrice" required>
                 </div>
                 <div class="form-group">
-                    <label>سعر بيع القطعة</label>
-                    <input type="number" step="0.01" id="itemPricePiece">
+                    <label>سعر الشراء (التكلفة)</label>
+                    <input type="number" step="0.01" id="itemCost" value="0">
                 </div>
                 <div class="form-group">
-                    <label>سعر بيع الكرتونة</label>
-                    <input type="number" step="0.01" id="itemPriceCarton">
-                </div>
-                <div class="form-group">
-                    <label>تكلفة شراء القطعة</label>
-                    <input type="number" step="0.01" id="itemCostPiece">
-                </div>
-                <div class="form-group">
-                    <label>تكلفة شراء الكرتونة</label>
-                    <input type="number" step="0.01" id="itemCostCarton">
-                </div>
-                <div class="form-group">
-                    <label>أقل كمية للإنذار (قطع)</label>
+                    <label>أقل كمية للإنذار</label>
                     <input type="number" id="itemMinStock" value="0">
                 </div>
                 <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> حفظ</button>
